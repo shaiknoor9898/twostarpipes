@@ -1,3 +1,4 @@
+import { getCatalogue } from "@/lib/catalogue.functions";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   ArrowRight,
@@ -24,18 +25,25 @@ import { WhatsAppIcon } from "@/components/site/WhatsAppIcon";
 import { GAUGES, PRODUCTS, SITE } from "@/lib/site";
 
 export const Route = createFileRoute("/")({
+  loader: () => getCatalogue(),
   head: () => ({
+    links: [{ rel: "canonical", href: "https://www.twostarpipes.com/" }],
     meta: [
+      { property: "og:url", content: "https://www.twostarpipes.com/" },
       { title: "Two Star Pipes Industries — Celebrating 37 Years | PVC, UPVC, Casing Pipes" },
       {
         name: "description",
         content:
           "Celebrating 37 years of pipe manufacturing. PVC, agricultural, casing, UPVC, electrical and drip pipes for farmers, dealers and wholesalers.",
       },
-      { property: "og:title", content: "Two Star Pipes Industries — Celebrating 37 Years of Trust" },
+      {
+        property: "og:title",
+        content: "Two Star Pipes Industries — Celebrating 37 Years of Trust",
+      },
       {
         property: "og:description",
-        content: "Be a Star, Be with Star. PVC, agricultural, casing, UPVC and electrical pipes direct from the factory.",
+        content:
+          "Be a Star, Be with Star. PVC, agricultural, casing, UPVC and electrical pipes direct from the factory.",
       },
     ],
   }),
@@ -66,13 +74,14 @@ const STRIP = [
 ];
 
 function Index() {
+  const products = Route.useLoaderData();
   return (
     <>
       <h1 className="sr-only">Two Star Pipes Industries — celebrating {SITE.years} years</h1>
       <HeroSlider />
 
       {/* Feature strip — floating card */}
-      <section className="relative z-10 px-4 pt-6 md:-mt-14 md:px-6 md:pt-0">
+      <section className="relative z-10 px-4 pt-6 md:px-6">
         <div className="mx-auto grid max-w-7xl grid-cols-2 gap-y-6 rounded-2xl border bg-card px-4 py-8 shadow-lift md:grid-cols-4">
           {FEATURES.map((f, i) => (
             <div
@@ -98,17 +107,17 @@ function Index() {
             Uncompromised quality, <span className="text-accent">assured performance</span>
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground">
-            PVC, agricultural, casing, UPVC, electrical and drip pipes with drip fittings — all made in our
-            Rayachoty factory, in {GAUGES.join(" and ")} pressure classes.
+            PVC, agricultural, casing, UPVC, electrical and drip pipes with drip fittings — all made
+            in our Rayachoty factory, in {GAUGES.join(" and ")} pressure classes.
           </p>
         </div>
 
         <div className="mt-12 grid gap-6 lg:grid-cols-2">
-          {PRODUCTS.map((p, i) => (
+          {products.map((p, i) => (
             <article
               key={p.slug}
               className={`group overflow-hidden rounded-3xl border bg-card shadow-soft ${
-                i === PRODUCTS.length - 1 && PRODUCTS.length % 2 === 1 ? "lg:col-span-2" : ""
+                i === products.length - 1 && products.length % 2 === 1 ? "lg:col-span-2" : ""
               }`}
             >
               <div className="grid h-full sm:grid-cols-2">
@@ -129,7 +138,10 @@ function Index() {
                   <p className="mt-4 text-muted-foreground">{p.description}</p>
                   <ul className="mt-5 space-y-2">
                     {(p.advantages ?? p.uses).slice(0, 4).map((u) => (
-                      <li key={u} className="flex items-center gap-2 font-display font-semibold text-primary">
+                      <li
+                        key={u}
+                        className="flex items-center gap-2 font-display font-semibold text-primary"
+                      >
                         <Check className="size-4 shrink-0 text-accent" /> {u}
                       </li>
                     ))}
@@ -147,9 +159,14 @@ function Index() {
       </section>
 
       {/* Auto-scrolling photo strip */}
-      <section className="overflow-hidden bg-navy-gradient py-12 md:py-16" aria-label="Photo gallery">
+      <section
+        className="overflow-hidden bg-navy-gradient py-12 md:py-16"
+        aria-label="Photo gallery"
+      >
         <div className="mx-auto mb-8 max-w-7xl px-4 md:px-6">
-          <h2 className="headline text-3xl text-primary-foreground md:text-4xl">Our pipes, our people</h2>
+          <h2 className="headline text-3xl text-primary-foreground md:text-4xl">
+            Our pipes, our people
+          </h2>
         </div>
         <div className="flex w-max animate-marquee gap-4">
           {[...STRIP, ...STRIP].map((s, i) => (
@@ -158,7 +175,12 @@ function Index() {
               className="relative h-48 w-72 shrink-0 overflow-hidden rounded-2xl md:h-60 md:w-96"
               aria-hidden={i >= STRIP.length}
             >
-              <img src={s.src} alt={s.label} loading="lazy" className="h-full w-full object-cover" />
+              <img
+                src={s.src}
+                alt={s.label}
+                loading="lazy"
+                className="h-full w-full object-cover"
+              />
               <figcaption className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-navy-deep/90 to-transparent p-3 font-display text-sm font-semibold text-primary-foreground">
                 {s.label}
               </figcaption>
@@ -207,13 +229,15 @@ function Index() {
               From our factory to your field
             </h2>
             <p className="mt-5 text-lg text-muted-foreground">
-              We sell wholesale to dealers and directly to farmers — so you get strong pipes at fair,
-              factory-direct prices.
+              We sell wholesale to dealers and directly to farmers — so you get strong pipes at
+              fair, factory-direct prices.
             </p>
             <div className="mt-8 grid grid-cols-2 gap-4">
               {STATS.map((s) => (
                 <div key={s.label} className="rounded-xl border bg-card p-5">
-                  <p className="headline text-3xl text-accent">{s.value}</p>
+                  <p className="headline text-xl sm:text-2xl md:text-xl lg:text-3xl text-accent">
+                    {s.value}
+                  </p>
                   <p className="mt-1 text-sm text-muted-foreground">{s.label}</p>
                 </div>
               ))}
@@ -235,14 +259,18 @@ function Index() {
         <div className="mx-auto grid max-w-7xl gap-8 px-4 md:px-6 lg:grid-cols-[2fr_3fr]">
           <div>
             <p className="eyebrow">Visit Our Factory</p>
-            <h2 className="headline mt-3 text-3xl text-primary md:text-4xl">Rayachoty, Andhra Pradesh</h2>
+            <h2 className="headline mt-3 text-3xl text-primary md:text-4xl">
+              Rayachoty, Andhra Pradesh
+            </h2>
             <ul className="mt-8 space-y-5">
               <li className="flex gap-4">
                 <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-leaf-soft text-accent">
                   <MapPin className="size-5" />
                 </span>
                 <span className="min-w-0">
-                  <span className="block font-display font-semibold text-primary">{SITE.addressLine1}</span>
+                  <span className="block font-display font-semibold text-primary">
+                    {SITE.addressLine1}
+                  </span>
                   <span className="text-muted-foreground">{SITE.addressLine2}</span>
                 </span>
               </li>
@@ -251,8 +279,12 @@ function Index() {
                   <Phone className="size-5" />
                 </span>
                 <span className="font-display font-semibold text-primary">
-                  <a href={SITE.phoneHref} className="block hover:text-accent">{SITE.phone}</a>
-                  <a href={SITE.phone2Href} className="block hover:text-accent">{SITE.phone2}</a>
+                  <a href={SITE.phoneHref} className="block hover:text-accent">
+                    {SITE.phone}
+                  </a>
+                  <a href={SITE.phone2Href} className="block hover:text-accent">
+                    {SITE.phone2}
+                  </a>
                 </span>
               </li>
               <li className="flex gap-4">
@@ -260,7 +292,10 @@ function Index() {
                   <Mail className="size-5" />
                 </span>
                 <span className="min-w-0">
-                  <a href={`mailto:${SITE.email}`} className="block break-all font-display font-semibold text-primary hover:text-accent">
+                  <a
+                    href={`mailto:${SITE.email}`}
+                    className="block break-all font-display font-semibold text-primary hover:text-accent"
+                  >
                     {SITE.email}
                   </a>
                   <span className="text-muted-foreground">{SITE.website}</span>
@@ -273,7 +308,11 @@ function Index() {
                   <MapPin /> Get Directions
                 </a>
               </Button>
-              <Button asChild size="lg" className="bg-whatsapp text-whatsapp-foreground hover:bg-whatsapp/90">
+              <Button
+                asChild
+                size="lg"
+                className="bg-whatsapp text-whatsapp-foreground hover:bg-whatsapp/90"
+              >
                 <a href={SITE.whatsappHref} target="_blank" rel="noreferrer">
                   <WhatsAppIcon /> WhatsApp Us
                 </a>

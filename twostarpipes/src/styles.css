@@ -115,8 +115,18 @@
     oklch(0.97 0.02 140) 0%,
     oklch(0.93 0.05 140) 100%
   );
-  --gradient-gold: linear-gradient(135deg, oklch(0.9 0.12 90), oklch(0.72 0.14 70), oklch(0.88 0.12 88));
-  --gradient-hero-dark: linear-gradient(90deg, oklch(0.18 0.08 262 / 0.92) 0%, oklch(0.2 0.08 262 / 0.7) 45%, oklch(0.2 0.08 262 / 0.1) 100%);
+  --gradient-gold: linear-gradient(
+    135deg,
+    oklch(0.9 0.12 90),
+    oklch(0.72 0.14 70),
+    oklch(0.88 0.12 88)
+  );
+  --gradient-hero-dark: linear-gradient(
+    90deg,
+    oklch(0.18 0.08 262 / 0.92) 0%,
+    oklch(0.2 0.08 262 / 0.7) 45%,
+    oklch(0.2 0.08 262 / 0.1) 100%
+  );
   --gradient-navy: linear-gradient(135deg, oklch(0.32 0.13 262), oklch(0.22 0.09 262));
   --shadow-soft: 0 10px 30px -12px oklch(0.32 0.13 262 / 0.25);
   --shadow-lift: 0 20px 45px -18px oklch(0.32 0.13 262 / 0.35);
@@ -236,4 +246,22 @@
   @media (prefers-reduced-motion: reduce) {
     animation: none;
   }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 3px;
+}
+html {
+  scroll-padding-top: 6rem;
 }

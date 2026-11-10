@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { Turnstile } from "./Turnstile";
+import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { CheckCircle2, Loader2, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -6,23 +7,41 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { submitQuote } from "@/lib/quote.functions";
-import { CUSTOMER_TYPES, quoteSchema } from "@/lib/quote-schema";
+import { CUSTOMER_TYPES, createQuoteSchema } from "@/lib/quote-schema";
 import { PRODUCTS } from "@/lib/site";
 
 const selectClass =
   "flex h-11 w-full rounded-md border border-input bg-card px-3 text-base shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
-export function QuoteForm({ defaultType = "farmer" }: { defaultType?: (typeof CUSTOMER_TYPES)[number] }) {
+export function QuoteForm({
+  defaultType = "farmer",
+  products = PRODUCTS,
+}: {
+  defaultType?: (typeof CUSTOMER_TYPES)[number];
+  products?: { name: string }[];
+}) {
   const send = useServerFn(submitQuote);
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => setHydrated(true), []);
   const [status, setStatus] = useState<"idle" | "sending" | "done">("idle");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [serverError, setServerError] = useState<string | null>(null);
 
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const [challengeVersion, setChallengeVersion] = useState(0);
+  const submitting = useRef(false);
+  const requestRef = useRef<{ fingerprint: string; id: string } | null>(null);
+
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (submitting.current) return;
+    setServerError(null);
     const form = e.currentTarget;
     const raw = Object.fromEntries(new FormData(form).entries());
-    const parsed = quoteSchema.safeParse(raw);
+    const parsed = createQuoteSchema([
+      ...products.map((p) => p.name),
+      "Multiple products",
+    ]).safeParse(raw);
     if (!parsed.success) {
       const errs: Record<string, string> = {};
       for (const issue of parsed.error.issues) errs[String(issue.path[0])] ??= issue.message;
@@ -30,13 +49,26 @@ export function QuoteForm({ defaultType = "farmer" }: { defaultType?: (typeof CU
       return;
     }
     setErrors({});
+    if (!turnstileToken) {
+      setServerError("Please complete the security check.");
+      return;
+    }
+    setErrors({});
     setServerError(null);
+    submitting.current = true;
     setStatus("sending");
     try {
-      const res = await send({ data: parsed.data });
+      const fingerprint = JSON.stringify(parsed.data);
+      if (requestRef.current?.fingerprint !== fingerprint)
+        requestRef.current = { fingerprint, id: crypto.randomUUID() };
+      const res = await send({
+        data: { ...parsed.data, turnstileToken, requestId: requestRef.current.id },
+      });
       if (res.ok) {
         setStatus("done");
+        window.dispatchEvent(new Event("quote-success"));
         form.reset();
+        requestRef.current = null;
       } else {
         setServerError(res.error);
         setStatus("idle");
@@ -44,6 +76,10 @@ export function QuoteForm({ defaultType = "farmer" }: { defaultType?: (typeof CU
     } catch {
       setServerError("Could not send your request. Please call us.");
       setStatus("idle");
+    } finally {
+      submitting.current = false;
+      setTurnstileToken("");
+      setChallengeVersion((v) => v + 1);
     }
   }
 
@@ -60,38 +96,79 @@ export function QuoteForm({ defaultType = "farmer" }: { defaultType?: (typeof CU
     );
   }
 
-  const err = (k: string) => errors[k] && <p className="mt-1 text-sm text-destructive">{errors[k]}</p>;
+  const err = (k: string) =>
+    errors[k] && (
+      <p id={`${k}-error`} role="alert" className="mt-1 text-sm text-destructive">
+        {errors[k]}
+      </p>
+    );
 
   return (
-    <form onSubmit={onSubmit} noValidate className="grid gap-4 rounded-2xl border bg-card p-6 shadow-soft md:grid-cols-2 md:p-8">
+    <form
+      method="post"
+      onSubmit={onSubmit}
+      noValidate
+      className="grid gap-4 rounded-2xl border bg-card p-6 shadow-soft md:grid-cols-2 md:p-8"
+    >
       <div>
         <Label htmlFor="name">Your name *</Label>
-        <Input id="name" name="name" className="mt-1.5 h-11" maxLength={100} />
+        <Input
+          id="name"
+          aria-invalid={!!errors["name"]}
+          aria-describedby={errors["name"] ? "name-error" : undefined}
+          name="name"
+          className="mt-1.5 h-11"
+          maxLength={100}
+        />
         {err("name")}
       </div>
       <div>
         <Label htmlFor="phone">Phone / WhatsApp *</Label>
-        <Input id="phone" name="phone" type="tel" inputMode="tel" className="mt-1.5 h-11" maxLength={20} />
+        <Input
+          id="phone"
+          aria-invalid={!!errors["phone"]}
+          aria-describedby={errors["phone"] ? "phone-error" : undefined}
+          name="phone"
+          type="tel"
+          inputMode="tel"
+          className="mt-1.5 h-11"
+          maxLength={20}
+        />
         {err("phone")}
       </div>
       <div>
         <Label htmlFor="customer_type">I am a *</Label>
-        <select id="customer_type" name="customer_type" defaultValue={defaultType} className={`${selectClass} mt-1.5`}>
+        <select
+          id="customer_type"
+          aria-invalid={!!errors["customer_type"]}
+          aria-describedby={errors["customer_type"] ? "customer_type-error" : undefined}
+          name="customer_type"
+          defaultValue={defaultType}
+          className={`${selectClass} mt-1.5`}
+        >
           <option value="farmer">Farmer</option>
           <option value="dealer">Dealer</option>
           <option value="wholesaler">Wholesaler</option>
           <option value="contractor">Contractor / Builder</option>
           <option value="other">Other</option>
         </select>
+        {err("customer_type")}
       </div>
       <div>
         <Label htmlFor="product">Product *</Label>
-        <select id="product" name="product" defaultValue="" className={`${selectClass} mt-1.5`}>
+        <select
+          id="product"
+          aria-invalid={!!errors["product"]}
+          aria-describedby={errors["product"] ? "product-error" : undefined}
+          name="product"
+          defaultValue=""
+          className={`${selectClass} mt-1.5`}
+        >
           <option value="" disabled>
             Choose a product
           </option>
-          {PRODUCTS.map((p) => (
-            <option key={p.slug} value={p.name}>
+          {products.map((p) => (
+            <option key={p.name} value={p.name}>
               {p.name}
             </option>
           ))}
@@ -101,24 +178,71 @@ export function QuoteForm({ defaultType = "farmer" }: { defaultType?: (typeof CU
       </div>
       <div>
         <Label htmlFor="city">Village / City</Label>
-        <Input id="city" name="city" className="mt-1.5 h-11" maxLength={100} />
+        <Input
+          id="city"
+          aria-invalid={!!errors["city"]}
+          aria-describedby={errors["city"] ? "city-error" : undefined}
+          name="city"
+          className="mt-1.5 h-11"
+          maxLength={100}
+        />
+        {err("city")}
       </div>
       <div>
         <Label htmlFor="quantity">Quantity needed</Label>
-        <Input id="quantity" name="quantity" placeholder="e.g. 100 pipes, 63 mm" className="mt-1.5 h-11" maxLength={100} />
+        <Input
+          id="quantity"
+          aria-invalid={!!errors["quantity"]}
+          aria-describedby={errors["quantity"] ? "quantity-error" : undefined}
+          name="quantity"
+          placeholder="e.g. 100 pipes, 63 mm"
+          className="mt-1.5 h-11"
+          maxLength={100}
+        />
+        {err("quantity")}
       </div>
       <div className="md:col-span-2">
         <Label htmlFor="email">Email (optional)</Label>
-        <Input id="email" name="email" type="email" className="mt-1.5 h-11" maxLength={255} />
+        <Input
+          id="email"
+          aria-invalid={!!errors["email"]}
+          aria-describedby={errors["email"] ? "email-error" : undefined}
+          name="email"
+          type="email"
+          className="mt-1.5 h-11"
+          maxLength={255}
+        />
         {err("email")}
       </div>
       <div className="md:col-span-2">
         <Label htmlFor="message">Message</Label>
-        <Textarea id="message" name="message" rows={4} className="mt-1.5" maxLength={1000} />
+        <Textarea
+          id="message"
+          aria-invalid={!!errors["message"]}
+          aria-describedby={errors["message"] ? "message-error" : undefined}
+          name="message"
+          rows={4}
+          className="mt-1.5"
+          maxLength={1000}
+        />
+        {err("message")}
       </div>
-      {serverError && <p className="text-sm text-destructive md:col-span-2">{serverError}</p>}
       <div className="md:col-span-2">
-        <Button type="submit" variant="leaf" size="lg" disabled={status === "sending"} className="w-full md:w-auto">
+        <Turnstile key={challengeVersion} onToken={setTurnstileToken} />
+      </div>
+      {serverError && (
+        <p role="alert" className="text-sm text-destructive md:col-span-2">
+          {serverError}
+        </p>
+      )}
+      <div className="md:col-span-2">
+        <Button
+          type="submit"
+          variant="leaf"
+          size="lg"
+          disabled={!hydrated || status === "sending"}
+          className="w-full md:w-auto"
+        >
           {status === "sending" ? <Loader2 className="animate-spin" /> : <Send />}
           Request a Quote
         </Button>

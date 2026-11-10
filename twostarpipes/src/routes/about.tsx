@@ -7,7 +7,9 @@ import { SITE } from "@/lib/site";
 
 export const Route = createFileRoute("/about")({
   head: () => ({
+    links: [{ rel: "canonical", href: "https://www.twostarpipes.com/about" }],
     meta: [
+      { property: "og:url", content: "https://www.twostarpipes.com/about" },
       { title: "About Us — Two Star Pipes Industries" },
       {
         name: "description",
@@ -15,25 +17,48 @@ export const Route = createFileRoute("/about")({
           "Since 1989 in Rayachoty, Two Star Pipes Industries has made PVC, agricultural, casing, UPVC, electrical and drip pipes for farmers, dealers and wholesalers.",
       },
       { property: "og:title", content: "About Two Star Pipes Industries" },
-      { property: "og:description", content: "37 years of pipe manufacturing for Indian farmers and dealers." },
+      {
+        property: "og:description",
+        content: "37 years of pipe manufacturing for Indian farmers and dealers.",
+      },
     ],
   }),
   component: About,
 });
 
 const VALUES = [
-  { icon: Factory, title: "In-house manufacturing", text: "Every pipe is made in our own factory with strict quality checks." },
-  { icon: Award, title: "Quality you can trust", text: "Thick walls, correct sizes and pipes that last for years in the field." },
-  { icon: Sprout, title: "Made for farmers", text: "We understand irrigation needs and sell directly to farmers." },
-  { icon: Truck, title: "Wholesale supply", text: "Steady stock and timely delivery for dealers and wholesalers." },
+  {
+    icon: Factory,
+    title: "In-house manufacturing",
+    text: "Every pipe is made in our own factory with strict quality checks.",
+  },
+  {
+    icon: Award,
+    title: "Quality you can trust",
+    text: "Thick walls, correct sizes and pipes that last for years in the field.",
+  },
+  {
+    icon: Sprout,
+    title: "Made for farmers",
+    text: "We understand irrigation needs and sell directly to farmers.",
+  },
+  {
+    icon: Truck,
+    title: "Wholesale supply",
+    text: "Steady stock and timely delivery for dealers and wholesalers.",
+  },
 ];
 
 function About() {
   return (
     <>
-      <PageHeader eyebrow="About Us" title="37 years of making pipes India relies on" image={factory}>
-        Two Star Pipes Industries manufactures PVC, agricultural, casing, UPVC, electrical and drip pipes with drip fittings. We supply wholesale to
-        dealers and directly to farmers.
+      <PageHeader
+        eyebrow="About Us"
+        title="37 years of making pipes India relies on"
+        image={factory}
+      >
+        Two Star Pipes Industries manufactures PVC, agricultural, casing, UPVC, electrical and drip
+        pipes with drip fittings. We supply wholesale to dealers and directly to farmers.
       </PageHeader>
 
       <section className="mx-auto grid max-w-7xl items-center gap-12 px-4 py-16 md:grid-cols-2 md:px-6 md:py-24">
@@ -47,11 +72,13 @@ function About() {
         />
         <div>
           <p className="eyebrow">Our Story</p>
-          <h2 className="headline mt-3 text-3xl text-primary md:text-4xl">Built on trust, one pipe at a time</h2>
+          <h2 className="headline mt-3 text-3xl text-primary md:text-4xl">
+            Built on trust, one pipe at a time
+          </h2>
           <p className="mt-5 text-lg text-muted-foreground">
             Our founder, {SITE.founder}, started in {SITE.founded} in Rayachoty, Kadapa Dist, with
-            one goal: quality pipes for drinking water, irrigation and drainage in the region. He was
-            one of the first to start a PVC pipe factory in Rayachoty.
+            one goal: quality pipes for drinking water, irrigation and drainage in the region. He
+            was one of the first to start a PVC pipe factory in Rayachoty.
           </p>
           <p className="mt-4 text-lg text-muted-foreground">
             Today {SITE.leaders.join(" and ")} lead the company. We make pipes from 20 mm to 200 mm

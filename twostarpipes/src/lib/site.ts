@@ -44,13 +44,7 @@ export const SITE = {
 export const GAUGES = ["4 kgf/cm²", "6 kgf/cm²"];
 
 export type ProductSlug =
-  | "pvc"
-  | "agricultural"
-  | "casing"
-  | "upvc"
-  | "electrical"
-  | "drip"
-  | "drip-fittings";
+  "pvc" | "agricultural" | "casing" | "upvc" | "electrical" | "drip" | "drip-fittings";
 export type Product = {
   slug: ProductSlug;
   name: string;
@@ -87,7 +81,20 @@ export const PRODUCTS: Product[] = [
     description:
       "Strong, lightweight PVC pipes for water supply, pump lines and drainage. Made to carry water season after season without rust or leaks.",
     uses: ["Water supply", "Pump & motor lines", "Drainage", "Village pipelines"],
-    sizes: ["20 mm", "25 mm", "32 mm", "40 mm", "50 mm", "63 mm", "75 mm", "90 mm", "110 mm", "140 mm", "160 mm", "200 mm"],
+    sizes: [
+      "20 mm",
+      "25 mm",
+      "32 mm",
+      "40 mm",
+      "50 mm",
+      "63 mm",
+      "75 mm",
+      "90 mm",
+      "110 mm",
+      "140 mm",
+      "160 mm",
+      "200 mm",
+    ],
     gauges: GAUGES,
   },
   {
@@ -109,7 +116,16 @@ export const PRODUCTS: Product[] = [
     description:
       "PVC casing and ribbed screen pipes for bore wells. Threaded joints, corrosion-proof walls and easy installation even at great depth.",
     uses: ["Bore wells", "Ribbed screen pipes", "Threaded joints", "Deep installation"],
-    sizes: ['1½" (40 mm)', '2" (50 mm)', '3" (75 mm)', '4" (110 mm)', '5" (140 mm)', '6" (160 mm)', '8" (200 mm)', '10" (250 mm)'],
+    sizes: [
+      '1½" (40 mm)',
+      '2" (50 mm)',
+      '3" (75 mm)',
+      '4" (110 mm)',
+      '5" (140 mm)',
+      '6" (160 mm)',
+      '8" (200 mm)',
+      '10" (250 mm)',
+    ],
     advantages: CASING_ADVANTAGES,
   },
   {
@@ -149,7 +165,12 @@ export const PRODUCTS: Product[] = [
     image: dripFittingsImg,
     description:
       "Complete drip fittings — grommets, take-offs, joiners, tees, elbows, end caps, mini valves, drippers and filters — to set up your full drip system.",
-    uses: ["Grommets & take-offs", "Joiners, tees & elbows", "End caps & mini valves", "Drippers & filters"],
+    uses: [
+      "Grommets & take-offs",
+      "Joiners, tees & elbows",
+      "End caps & mini valves",
+      "Drippers & filters",
+    ],
     sizes: ["12 mm", "16 mm", "20 mm"],
   },
 ];

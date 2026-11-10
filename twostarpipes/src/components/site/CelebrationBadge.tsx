@@ -13,7 +13,13 @@ export function CelebrationBadge({ size = "sm" }: { size?: "sm" | "lg" }) {
   }
   return (
     <div className="flex shrink-0 items-center border-l pl-3">
-      <img src={logo37} alt={alt} width={1967} height={799} className="h-9 w-auto sm:h-11 md:h-14" />
+      <img
+        src={logo37}
+        alt={alt}
+        width={1967}
+        height={799}
+        className="h-9 w-auto sm:h-11 md:h-14"
+      />
     </div>
   );
 }

@@ -6,12 +6,12 @@ import { WhatsAppIcon } from "./WhatsAppIcon";
 export function SiteFooter() {
   return (
     <footer className="bg-navy-gradient text-primary-foreground">
-      <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 md:grid-cols-4 md:px-6">
+      <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 md:grid-cols-2 lg:grid-cols-4 md:px-6">
         <div className="md:col-span-2">
           <p className="headline text-3xl">Two Star Pipes Industries</p>
           <p className="mt-3 max-w-md text-primary-foreground/75">
-            {SITE.years} years of manufacturing PVC, agricultural, casing, UPVC, electrical and drip pipes for farmers, dealers
-            and wholesalers.
+            {SITE.years} years of manufacturing PVC, agricultural, casing, UPVC, electrical and drip
+            pipes for farmers, dealers and wholesalers.
           </p>
           <p className="mt-4 headline text-2xl text-gold">{SITE.slogan}</p>
           <p className="mt-2 italic text-leaf">“{SITE.tagline}”</p>
@@ -50,7 +50,12 @@ export function SiteFooter() {
               </a>
             </li>
             <li>
-              <a href={SITE.whatsappHref} target="_blank" rel="noreferrer" className="flex items-center gap-2 hover:text-leaf">
+              <a
+                href={SITE.whatsappHref}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-2 hover:text-leaf"
+              >
                 <WhatsAppIcon className="size-4 text-whatsapp" /> WhatsApp
               </a>
             </li>
@@ -76,13 +81,24 @@ export function SiteFooter() {
 export function MobileActionBar() {
   return (
     <div className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-3 border-t bg-card shadow-lift md:hidden">
-      <a href={SITE.phoneHref} className="flex flex-col items-center gap-1 py-2.5 text-xs font-semibold text-primary">
+      <a
+        href={SITE.phoneHref}
+        className="flex flex-col items-center gap-1 py-2.5 text-xs font-semibold text-primary"
+      >
         <Phone className="size-5" /> Call
       </a>
-      <a href={SITE.whatsappHref} target="_blank" rel="noreferrer" className="flex flex-col items-center gap-1 py-2.5 text-xs font-semibold text-whatsapp">
+      <a
+        href={SITE.whatsappHref}
+        target="_blank"
+        rel="noreferrer"
+        className="flex flex-col items-center gap-1 py-2.5 text-xs font-semibold text-whatsapp"
+      >
         <WhatsAppIcon className="size-5" /> WhatsApp
       </a>
-      <Link to="/contact" className="flex flex-col items-center gap-1 bg-accent py-2.5 text-xs font-semibold text-accent-foreground">
+      <Link
+        to="/contact"
+        className="flex flex-col items-center gap-1 bg-accent py-2.5 text-xs font-semibold text-accent-foreground"
+      >
         <Mail className="size-5" /> Get Quote
       </Link>
     </div>

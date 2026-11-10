@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FileText, Menu, Phone, X } from "lucide-react";
 import logo from "@/assets/two-star-logo.png";
 import { CelebrationBadge } from "./CelebrationBadge";
@@ -17,6 +17,13 @@ const NAV = [
 
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => setHydrated(true), []);
+  const toggle = useRef<HTMLButtonElement>(null);
+  const menu = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (open) menu.current?.querySelector<HTMLAnchorElement>("a")?.focus();
+  }, [open]);
   return (
     <header className="sticky top-0 z-40 shadow-soft">
       {/* Main bar */}
@@ -24,12 +31,18 @@ export function SiteHeader() {
         <div className="mx-auto flex h-20 max-w-7xl items-center justify-between gap-4 px-4 md:px-6">
           <div className="flex min-w-0 items-center gap-3">
             <Link to="/" className="min-w-0 shrink" aria-label="Two Star Pipes Industries home">
-              <img src={logo} alt="Two Star Pipes Industries" width={900} height={168} className="h-8 w-auto sm:h-10 md:h-12" />
+              <img
+                src={logo}
+                alt="Two Star Pipes Industries"
+                width={900}
+                height={168}
+                className="h-8 w-auto sm:h-10 md:h-12"
+              />
             </Link>
             <CelebrationBadge />
           </div>
 
-          <nav className="hidden items-center gap-0.5 lg:flex">
+          <nav aria-label="Main navigation" className="hidden items-center gap-0.5 lg:flex">
             {NAV.map((n) => (
               <Link
                 key={n.to}
@@ -44,7 +57,10 @@ export function SiteHeader() {
           </nav>
 
           <div className="flex items-center gap-3">
-            <a href={SITE.phoneHref} className="hidden items-center gap-3 whitespace-nowrap 2xl:flex">
+            <a
+              href={SITE.phoneHref}
+              className="hidden items-center gap-3 whitespace-nowrap 2xl:flex"
+            >
               <span className="grid size-11 place-items-center rounded-full bg-leaf-soft text-accent">
                 <Phone className="size-5" />
               </span>
@@ -71,6 +87,10 @@ export function SiteHeader() {
               variant="ghost"
               size="icon"
               className="lg:hidden"
+              disabled={!hydrated}
+              ref={toggle}
+              aria-expanded={open}
+              aria-controls="mobile-navigation"
               aria-label={open ? "Close menu" : "Open menu"}
               onClick={() => setOpen((v) => !v)}
             >
@@ -80,7 +100,18 @@ export function SiteHeader() {
         </div>
 
         {open && (
-          <nav className="border-t bg-card px-4 pb-4 lg:hidden">
+          <nav
+            ref={menu}
+            id="mobile-navigation"
+            aria-label="Mobile navigation"
+            onKeyDown={(e) => {
+              if (e.key === "Escape") {
+                setOpen(false);
+                toggle.current?.focus();
+              }
+            }}
+            className="border-t bg-card px-4 pb-4 lg:hidden"
+          >
             {NAV.map((n) => (
               <Link
                 key={n.to}

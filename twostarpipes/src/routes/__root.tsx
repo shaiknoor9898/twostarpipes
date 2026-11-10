@@ -1,3 +1,7 @@
+import { PrivacyControls } from "@/components/site/PrivacyControls";
+import { useLocation } from "@tanstack/react-router";
+import { SITE } from "@/lib/site";
+import logo from "@/assets/two-star-logo.png";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   Outlet,
@@ -39,7 +43,7 @@ function NotFoundComponent() {
 }
 
 function ErrorComponent({ error, reset }: ErrorComponentProps) {
-  console.error(error);
+  console.error("Page rendering failed");
   const router = useRouter();
   useEffect(() => {
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
@@ -86,7 +90,29 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-title", content: "Two Star Pipes" },
       { property: "og:type", content: "website" },
+      { property: "og:image", content: new URL(logo, "https://www.twostarpipes.com").href },
       { name: "twitter:card", content: "summary_large_image" },
+    ],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "Organization",
+          name: SITE.name,
+          url: "https://www.twostarpipes.com",
+          telephone: SITE.phone,
+          email: SITE.email,
+          address: {
+            "@type": "PostalAddress",
+            streetAddress: SITE.addressLine1,
+            addressLocality: "Rayachoty",
+            addressRegion: "Andhra Pradesh",
+            postalCode: "516269",
+            addressCountry: "IN",
+          },
+        }),
+      },
     ],
     links: [
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -126,18 +152,33 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const admin = useLocation().pathname.startsWith("/admin");
 
   return (
     <QueryClientProvider client={queryClient}>
-      <SiteHeader />
-      <main>
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded focus:bg-card focus:p-4"
+      >
+        Skip to content
+      </a>
+      {!admin && <SiteHeader />}
+      <main
+        id="main-content"
+        tabIndex={-1}
+        className={admin ? "min-h-screen" : "pb-24 md:pb-0 md:pr-14"}
+      >
         {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
         <Outlet />
       </main>
-      <SiteFooter />
-      <MobileActionBar />
-      <FloatingActions />
-      <WhatsAppBubble />
+      {!admin && (
+        <>
+          <PrivacyControls />
+          <SiteFooter />
+          <MobileActionBar />
+          <FloatingActions />
+        </>
+      )}
     </QueryClientProvider>
   );
 }

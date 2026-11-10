@@ -1,6 +1,15 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ChevronLeft, ChevronRight, FileText, LayoutGrid, Phone, Star } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  FileText,
+  LayoutGrid,
+  Phone,
+  Star,
+  Pause,
+  Play,
+} from "lucide-react";
 import celebration from "@/assets/celebration-37-years.jpg";
 import hero from "@/assets/hero-farm-pipes.jpg";
 import agri from "@/assets/product-agricultural.jpg";
@@ -57,23 +66,38 @@ const SLIDES: Slide[] = [
 export function HeroSlider() {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
+  const [hovered, setHovered] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const [reduced, setReduced] = useState(true);
+  useEffect(() => {
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const update = () => setReduced(media.matches);
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
   const go = (n: number) => setIndex((n + SLIDES.length) % SLIDES.length);
 
   useEffect(() => {
-    if (paused) return;
+    if (paused || hovered || focused || reduced) return;
     const t = setInterval(() => setIndex((i) => (i + 1) % SLIDES.length), 5500);
     return () => clearInterval(t);
-  }, [paused]);
+  }, [paused, hovered, focused, reduced]);
 
   return (
     <section
       className="relative overflow-hidden bg-navy-deep"
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onFocusCapture={() => setFocused(true)}
+      onBlurCapture={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget)) setFocused(false);
+      }}
+      aria-label="Two Star Pipes highlights"
       aria-roledescription="carousel"
     >
       <div
-        className="flex transition-transform duration-700 ease-out"
+        className="flex transition-transform duration-700 ease-out motion-reduce:transition-none"
         style={{ transform: `translateX(-${index * 100}%)` }}
       >
         {SLIDES.map((s, i) => (
@@ -125,7 +149,7 @@ export function HeroSlider() {
                 </a>
               </div>
               {s.badge && (
-                <div className="hidden md:block">
+                <div className="hidden lg:block">
                   <CelebrationBadge size="lg" />
                 </div>
               )}
@@ -134,7 +158,19 @@ export function HeroSlider() {
         ))}
       </div>
 
-      <div className="absolute inset-x-0 bottom-6 flex items-center justify-center gap-2 md:bottom-20">
+      <div className="relative flex items-center justify-center gap-2 py-4">
+        {reduced ? (
+          <span className="rounded bg-navy-deep px-2 py-1 text-xs text-white">Autoplay off</span>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setPaused((p) => !p)}
+            aria-label={paused ? "Play slideshow" : "Pause slideshow"}
+            className="grid size-10 place-items-center rounded-full bg-card/30 text-white"
+          >
+            {paused ? <Play className="size-5" /> : <Pause className="size-5" />}
+          </button>
+        )}
         <button
           type="button"
           onClick={() => go(index - 1)}
@@ -149,7 +185,8 @@ export function HeroSlider() {
             type="button"
             onClick={() => go(i)}
             aria-label={`Show slide ${i + 1}`}
-            className={`h-2.5 rounded-full transition-all ${i === index ? "w-8 bg-leaf" : "w-2.5 bg-card/60"}`}
+            aria-current={i === index ? "true" : undefined}
+            className={`h-9 min-w-9 rounded-full border-8 border-transparent bg-clip-padding transition-all ${i === index ? "w-12 bg-leaf" : "w-9 bg-card/60"}`}
           />
         ))}
         <button

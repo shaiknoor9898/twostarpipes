@@ -9,11 +9,19 @@ export function FloatingActions() {
     "group flex items-center gap-2 rounded-l-full py-3 pl-4 pr-3 font-display text-sm font-semibold shadow-lift transition-transform hover:-translate-x-1";
   return (
     <div className="fixed right-0 top-1/2 z-40 hidden -translate-y-1/2 flex-col items-end gap-2 md:flex">
-      <Link to="/contact" className={`${base} bg-accent text-accent-foreground`} aria-label="Get a quote">
+      <Link
+        to="/contact"
+        className={`${base} bg-accent text-accent-foreground`}
+        aria-label="Get a quote"
+      >
         <FileText className="size-5" />
         <span className="hidden group-hover:inline">Get a Quote</span>
       </Link>
-      <a href={SITE.phoneHref} className={`${base} bg-primary text-primary-foreground`} aria-label="Call us">
+      <a
+        href={SITE.phoneHref}
+        className={`${base} bg-primary text-primary-foreground`}
+        aria-label="Call us"
+      >
         <Phone className="size-5" />
         <span className="hidden group-hover:inline">{SITE.phone}</span>
       </a>

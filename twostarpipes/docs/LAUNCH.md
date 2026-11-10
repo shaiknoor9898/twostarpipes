@@ -1,0 +1,67 @@
+# Two Star Pipes: staging and production runbook
+
+## Scope and checkpoints
+
+The existing feature branch and uncommitted quotation work were preserved. No commits, pushes, merges, deployments, SQL executions or real emails were performed. Review checkpoints are: quotation protections and request idempotency; verified admin workspace; managed catalogue and restricted assets; transactional notifications and reminders; accessibility/SEO/privacy; QA and release readiness.
+
+Public enquiries do not require customer accounts. They go through the server's CAPTCHA, persistent rate limiter and restricted database writer. Direct anonymous database INSERT remains deliberately denied after the SQL cutover. This preserves anonymous enquiries while preventing bypass of the server controls.
+
+## Configuration
+
+Keep every server variable out of VITE variables, public files and Git. Use .env.example placeholders, a local ignored .env for development and Worker runtime secrets for staging/production. For local server variables run: node --env-file=.env node_modules/vite/bin/vite.js. Do not paste real values into issue reports or terminal commands that are recorded in shell history.
+
+| Variable | Use |
+| --- | --- |
+| SUPABASE_URL / SUPABASE_PUBLISHABLE_KEY | Server public project endpoint and publishable or legacy anon key |
+| VITE_SUPABASE_URL / VITE_SUPABASE_PUBLISHABLE_KEY | Browser public project endpoint/key for admin sign-in; same project |
+| SUPABASE_QUOTE_WRITER_KEY | Expiring project-trusted signed JWT, role quote_writer; no bypass-RLS privileges |
+| VITE_TURNSTILE_SITE_KEY | Public widget key, supplied at build time |
+| TURNSTILE_SECRET_KEY / TURNSTILE_HOSTNAMES | Server verification secret and exact comma-separated hostname allowlist |
+| UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN | Shared persistent non-evicting Redis REST database; separate per environment |
+| QUOTE_RATE_LIMIT_SECRET | Random secret >=32 characters for phone and token HMACs |
+| MANAGED_CATALOGUE | false initially; true only after current catalogue import and verification |
+| RESEND_API_KEY | Restricted email sending credential; provider account and domain verification required |
+| NOTIFICATION_FROM | Verified sender address, e.g. an owner-approved sales mailbox |
+| SITE_URL | Approved HTTPS origin for links in notification snapshots |
+| SUPABASE_NOTIFICATION_WORKER_KEY | Expiring JWT with notification_worker role only; never service_role |
+| NOTIFICATION_CRON_SECRET | Random >=32-character bearer credential used by the scheduled POST endpoint |
+| ANALYTICS_ENABLED | false by default; true enables anonymous counters only after browser consent |
+| PLAYWRIGHT_CHANNEL | Optional test-only browser channel; defaults to installed Microsoft Edge |
+
+The website never receives a JWT signing key. Provision scoped JWTs offline through a project-supported signing setup; establish rotation before expiry. Modern Supabase-managed signing keys may not be exportable. Admin authorization is an allowlist in public.admin_members, checked after Supabase getUser verifies each session. User-editable metadata cannot grant access. A logged-in nonadmin may see the admin shell but receives no customer records.
+
+## Staging sequence
+
+1. Create a separate Supabase project/database and Redis instance. Use synthetic fixtures only. Set all production destinations/keys to staging equivalents. Confirm backups and a tested restore procedure.
+2. Review security/000_quote_preflight.sql, inspect existing policies, table and column grants, memberships, functions, views, storage policies and triggers. Resolve unexpected grants or roles manually. The migration drafts deliberately fail on duplicate version objects or conflicting names; do not modify already-applied history.
+3. In disposable staging only, apply security/001_quote_hardening.sql. Run quote-rls-check.sql before admin migrations. Then validate legacy rows with 002_validate_constraints.sql. Repair invalid legacy data only with owner-approved changes.
+4. Review/apply 003_admin_catalogue_notifications.sql, then 004_submission_idempotency.sql. Migration 003 uses PostgreSQL 15+ UNIQUE NULLS NOT DISTINCT, a private admin allowlist, enforced RLS and audit/queue triggers. Migration 004 leaves legacy request IDs null and protects new requests with a unique UUID. Index creation can acquire locks; test on realistic staging volumes. It is not a zero-downtime migration.
+5. Create dedicated test admin and nonadmin users using Supabase Auth. Disable public signup if not needed, configure password policy, Auth rate limits/CAPTCHA and the owner-approved recovery process. Require MFA through Supabase policy before production if the business needs that assurance; this UI does not implement a separate MFA enrollment/challenge flow. Add only verified admin user UUIDs to admin_members through an owner-controlled SQL operation. The web app cannot add admins.
+6. Run admin-rls-check.sql with psql -v ON_ERROR_STOP=1 and dedicated admin_uuid/user_uuid variables. Run the idempotency check and verify direct REST calls under anon, nonadmin, admin, quote_writer and notification_worker. Anonymous/nonadmin users cannot view leads; admins cannot rewrite contact details; writers cannot read leads or set admin fields; workers cannot read customer contact data or change enquiries. Inspect Storage policies for public or nonadmin uploads: the bucket is public for product downloads, never private/customer data.
+7. Configure real staging Turnstile widgets/hostnames. Confirm expired, replayed and wrong-host/action challenges fail. The Redis token guard independently blocks concurrent replay; phone/global windows survive separate Worker instances and restarts. Test dependency outages, timeouts and quota exhaustion. Do not use production test keys.
+8. Build with staging public variables, then request an explicitly approved staging deployment using the existing Cloudflare/Nitro target. Do not use static-only hosting: server functions, Auth verification, uploads and the cron endpoint require server execution. Preserve nodejs_compat and compatible process.env support.
+9. Sign in at /admin. Verify denied access for the nonadmin. Import the existing catalogue once: duplicate slugs are ignored, never overwritten. Compare all business text, images, sizes and gauges with src/lib/site.ts. Built-in image references resolve to the current build assets. Confirm records exist, then enable MANAGED_CATALOGUE. Test create/edit/publish/unpublish/delete; existing enquiry history must survive product deletion. Product slugs are immutable. Upload only approved JPEG/PNG/WebP images or PDF brochures, <=5 MB; validation checks byte signatures and MIME. Consider an owner-approved malware scan pipeline before accepting less-trusted editors. Do not remove assets still referenced by products; automatic asset deletion is intentionally absent.
+10. Configure Resend with an approved sender/domain and restricted sending key. Save synthetic test recipients through the admin Notifications tab, then enable notifications. Configure an approved external scheduler to POST /api/notifications every minute using Authorization: Bearer <secret>, with no credentials in the URL. The endpoint accepts POST only. New-enquiry and due-follow-up jobs use unique deduplication keys, immutable recipient/sender/origin snapshots, a 5-minute lease, exponential retry (max eight attempts) and a 23-hour retry horizon to stay within provider idempotency retention. Test provider/ack failures and simultaneous workers. Do not resend failed jobs blindly: inspect provider delivery first. No automated WhatsApp API is configured; links open WhatsApp for a human.
+11. Test browser navigation, dealer enquiries, quotation retry, all admin filters/sorting/pages, optimistic update conflicts, notes, follow-up dates, recent status history, audit records, CSV exports (including formula-like text), uploads and notification settings. Use a fresh browser session and verify sign-out clears customer data. CSV is limited to 5000 filtered records and excludes internal notes/messages. Exports are audited before delivery. Store exported customer files securely and delete them under an approved retention policy.
+12. Verify public pages at 390, 768 and 1440 CSS pixels, keyboard-only navigation, focus visibility, skip link, mobile-menu Escape/focus return, slider pause and reduced motion. Check security headers, no-store on private endpoints, and that static assets cache without caching Auth or customer responses. Browser QA artifacts may contain sensitive data: test-results and playwright-report are ignored, and local tests use fixtures only.
+13. Confirm canonical HTTPS hostname (currently https://www.twostarpipes.com) before launch; align route metadata, sitemap, robots.txt, notification SITE_URL and redirects. Verify business claims: existing ISO 9001:2015 claim, farmers-served count, years/statistics, working hours, WhatsApp number and stock/delivery promises need owner evidence. No new certifications, reviews or statistics were invented. Organization structured data excludes those claims.
+14. Optional anonymous analytics are off by default. Opt-in stores only a consent preference in the browser; counters contain page/event/day, no IP, customer data or visitor ID. Counts are aggregate and subject to abuse; do not treat them as authoritative sales records. Redis TTL is 90 days. Hosting/CDN/provider infrastructure may separately retain request logs; configure retention and privacy notices before launch. No third-party analytics script was added.
+15. Configure host-side uptime/5xx alerts and Redis/email quota alerts. Application errors are redacted to fixed messages rather than raw exceptions/stacks. Never log request bodies, Authorization headers, customer contact details, notes or provider responses. Agree an incident owner and response/retention policy. Runtime redaction reduces diagnostic detail; reproduce with synthetic staging data.
+
+## Production approval checklist
+
+- Review every diff and SQL draft, all test results and the remaining-risk list. No automatic SQL or deployment hook is included.
+- Obtain owner confirmation for business claims, actual product PDFs/images, canonical hostname, email sender/recipients, alert contacts and customer-data retention.
+- Verify real staging tests passed; code/mocked tests alone are not production approval. Measure Core Web Vitals and perform an accessibility audit on the deployed staging site. Large existing brand imagery may need approved optimized variants.
+- Take a database backup and capture current RLS/grants/configuration. Prepare a maintenance window for the coordinated role/schema/application cutover. Public inserts must not remain enabled as a workaround.
+- Have the owner explicitly approve production SQL and deployment separately. Apply only reviewed versioned migrations with lock/statement timeouts; stop on any unexpected result. Do not run the old pre-admin RLS script after 003 because authenticated admins then legitimately have SELECT under RLS.
+- Configure production Worker secrets and public build variables. Enforce HTTPS and one canonical-host redirect at Cloudflare; add HSTS only after subdomain readiness is confirmed. Set per-IP edge limits on the actual server-function route, with trusted Cloudflare client IP handling at the edge. App code intentionally ignores spoofable forwarding headers. Private responses use no-store and deny framing; public preview embedding remains available. Baseline CSP disables objects and foreign form actions; a strict script CSP needs nonce integration and staging verification for TanStack/Turnstile.
+- Deploy only after explicit approval, smoke-test a synthetic enquiry and admin denial/success, check queue/audit health, then remove only approved synthetic fixtures. No such operations were done during development.
+
+## Recovery
+
+If a check fails, leave submissions disabled and keep the phone-contact fallback available. Turn off notification settings and pause the scheduler if delivery is uncertain; retain the outbox for investigation. Disable managed catalogue only if the owner accepts that the preserved static catalogue reappears, including previously unpublished built-in products. Revert the application to a reviewed compatible build, not one that restores anonymous REST inserts. Preserve the migrated data/schema and RLS while investigating; avoid destructive DOWN migrations. Restores and any data repair require explicit owner approval. Rotate compromised scoped JWTs/keys and invalidate sessions/allowlist access as appropriate. Request IDs prevent repeated storage within the same form instance/retry; a new browser tab or cleared form can still create a new enquiry.
+
+## Review, commit and push after approval
+
+Use git status and git diff --check, review security/CHANGES.md, then inspect git diff and every untracked source/SQL file. Confirm .env and .dev.vars remain ignored. Suggested logical commits: quotation security; admin/RLS; catalogue/storage; notifications; UI/SEO/QA/docs. Stage explicit paths after review, then git diff --cached before committing. Run npm run typecheck, npm run lint, npm test, npm run test:e2e and npm run build again if changes were made. Keep this feature branch; never rewrite published Lovable history. Push only after the owner explicitly approves, then open a review PR without merging. No git add, commit or push was performed here.

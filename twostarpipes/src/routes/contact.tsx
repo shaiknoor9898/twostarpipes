@@ -1,3 +1,4 @@
+import { getCatalogue } from "@/lib/catalogue.functions";
 import { createFileRoute } from "@tanstack/react-router";
 import { Clock, Mail, MapPin, Phone } from "lucide-react";
 import { WhatsAppIcon } from "@/components/site/WhatsAppIcon";
@@ -5,21 +6,29 @@ import { QuoteForm } from "@/components/site/QuoteForm";
 import { SITE } from "@/lib/site";
 
 export const Route = createFileRoute("/contact")({
+  loader: () => getCatalogue(),
   head: () => ({
+    links: [{ rel: "canonical", href: "https://www.twostarpipes.com/contact" }],
     meta: [
+      { property: "og:url", content: "https://www.twostarpipes.com/contact" },
       { title: "Contact & Request a Quote — Two Star Pipes Industries" },
       {
         name: "description",
-        content: "Call, WhatsApp or send a quote request to Two Star Pipes Industries for PVC, UPVC and electrical pipes.",
+        content:
+          "Call, WhatsApp or send a quote request to Two Star Pipes Industries for PVC, UPVC and electrical pipes.",
       },
       { property: "og:title", content: "Contact Two Star Pipes Industries" },
-      { property: "og:description", content: "Request a quote for PVC, UPVC and electrical pipes." },
+      {
+        property: "og:description",
+        content: "Request a quote for PVC, UPVC and electrical pipes.",
+      },
     ],
   }),
   component: Contact,
 });
 
 function Contact() {
+  const products = Route.useLoaderData();
   const items = [
     { icon: Phone, label: "Call us", value: SITE.phone, href: SITE.phoneHref },
     { icon: Phone, label: "Call us (alternate)", value: SITE.phone2, href: SITE.phone2Href },
@@ -33,11 +42,13 @@ function Contact() {
       <section className="mx-auto grid max-w-7xl gap-8 px-4 py-8 md:px-6 md:py-12 lg:grid-cols-[3fr_2fr]">
         <div>
           <p className="eyebrow">Get a Quote</p>
-          <h1 className="headline mt-2 text-3xl text-primary md:text-5xl">Your details — we call you back</h1>
+          <h1 className="headline mt-2 text-3xl text-primary md:text-5xl">
+            Your details — we call you back
+          </h1>
           <p className="mb-6 mt-3 text-muted-foreground">
             Farmers, dealers and wholesalers: fill in your name, phone and the pipes you need.
           </p>
-          <QuoteForm />
+          <QuoteForm products={products} />
         </div>
         <ul className="space-y-3 lg:pt-[7.5rem]">
           {items.map((it) => {
@@ -48,18 +59,25 @@ function Contact() {
                 </span>
                 <span className="min-w-0">
                   <span className="block text-sm text-muted-foreground">{it.label}</span>
-                  <span className="block break-words font-display text-base font-semibold text-primary md:text-lg">{it.value}</span>
+                  <span className="block break-words font-display text-base font-semibold text-primary md:text-lg">
+                    {it.value}
+                  </span>
                 </span>
               </>
             );
             return (
               <li key={it.label}>
                 {it.href ? (
-                  <a href={it.href} className="flex items-center gap-4 rounded-2xl border bg-card p-4 transition-shadow hover:shadow-soft">
+                  <a
+                    href={it.href}
+                    className="flex items-center gap-4 rounded-2xl border bg-card p-4 transition-shadow hover:shadow-soft"
+                  >
                     {body}
                   </a>
                 ) : (
-                  <div className="flex items-center gap-4 rounded-2xl border bg-card p-4">{body}</div>
+                  <div className="flex items-center gap-4 rounded-2xl border bg-card p-4">
+                    {body}
+                  </div>
                 )}
               </li>
             );

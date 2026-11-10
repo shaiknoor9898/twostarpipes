@@ -30,3 +30,12 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Local credentials
+.env
+.env.*
+!.env.example
+
+# Local browser QA artifacts (may contain fixture/customer information)
+/test-results/
+/playwright-report/
