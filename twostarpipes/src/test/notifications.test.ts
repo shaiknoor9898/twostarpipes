@@ -13,6 +13,7 @@ const job = {
 };
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.spyOn(console, "warn").mockImplementation(() => {});
   vi.stubGlobal("fetch", mocks.fetch);
   vi.stubEnv("SUPABASE_URL", "https://example.supabase.co");
   vi.stubEnv("SUPABASE_PUBLISHABLE_KEY", "sb_publishable_test");
@@ -34,9 +35,10 @@ beforeEach(() => {
 afterEach(() => {
   vi.unstubAllEnvs();
   vi.unstubAllGlobals();
+  vi.restoreAllMocks();
 });
 it("uses a stable provider idempotency key and a lease-bound acknowledgement", async () => {
-  expect(await deliverNotifications()).toEqual({ processed: 1 });
+  expect(await deliverNotifications()).toEqual({ processed: 1, delivered: 1, failed: 0 });
   expect(mocks.fetch.mock.calls[0]![1].headers["Idempotency-Key"]).toBe("enquiry/" + job.id);
   const payload = JSON.parse(mocks.fetch.mock.calls[0]![1].body);
   expect(payload.to).toEqual(job.recipients);
@@ -55,7 +57,13 @@ it.each(["http", "timeout", "malformed"])(
       mocks.fetch.mockResolvedValue(new Response("sensitive diagnostic", { status: 503 }));
     if (kind === "timeout") mocks.fetch.mockRejectedValue(new Error("private provider detail"));
     if (kind === "malformed") mocks.fetch.mockResolvedValue(new Response("{}"));
-    await deliverNotifications();
+    expect(await deliverNotifications()).toEqual({ processed: 1, delivered: 0, failed: 1 });
+    expect(console.warn).toHaveBeenCalledWith("Notification batch requires retry", {
+      category: "provider",
+      failed: 1,
+    });
+    expect(JSON.stringify(vi.mocked(console.warn).mock.calls)).not.toContain("private");
+    expect(JSON.stringify(vi.mocked(console.warn).mock.calls)).not.toContain("owner@example.com");
     expect(mocks.rpc).toHaveBeenCalledWith(
       "finish_notification_job",
       expect.objectContaining({ delivered: false, provider: null }),
@@ -64,7 +72,7 @@ it.each(["http", "timeout", "malformed"])(
 );
 it("does not send when disabled or no jobs are claimed", async () => {
   mocks.rpc.mockResolvedValue({ data: [], error: null });
-  expect(await deliverNotifications()).toEqual({ processed: 0 });
+  expect(await deliverNotifications()).toEqual({ processed: 0, delivered: 0, failed: 0 });
   expect(mocks.fetch).not.toHaveBeenCalled();
 });
 it("rejects a privileged worker credential before touching the queue", async () => {

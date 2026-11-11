@@ -1,3 +1,5 @@
+import { Text } from "@/components/site/SitePreferences";
+import { useSitePreferences } from "@/lib/site-preferences";
 import { createFileRoute } from "@tanstack/react-router";
 import { Award, Factory, Sprout, Truck } from "lucide-react";
 import factory from "@/assets/factory-extrusion.jpg";
@@ -50,6 +52,7 @@ const VALUES = [
 ];
 
 function About() {
+  const { t } = useSitePreferences();
   return (
     <>
       <PageHeader
@@ -57,33 +60,40 @@ function About() {
         title="37 years of making pipes India relies on"
         image={factory}
       >
-        Two Star Pipes Industries manufactures PVC, agricultural, casing, UPVC, electrical and drip
-        pipes with drip fittings. We supply wholesale to dealers and directly to farmers.
+        <Text
+          text={
+            "Two Star Pipes Industries manufactures PVC, agricultural, casing, UPVC, electrical and drip pipes with drip fittings. We supply wholesale to dealers and directly to farmers."
+          }
+        />
       </PageHeader>
 
       <section className="mx-auto grid max-w-7xl items-center gap-12 px-4 py-16 md:grid-cols-2 md:px-6 md:py-24">
         <img
           src={warehouse}
-          alt="Two Star pipe stock ready for dispatch"
+          alt={t("Two Star pipe stock ready for dispatch")}
           loading="lazy"
           width={1280}
           height={896}
           className="w-full rounded-3xl object-cover shadow-lift"
         />
         <div>
-          <p className="eyebrow">Our Story</p>
+          <p className="eyebrow">
+            <Text text={"Our Story"} />
+          </p>
           <h2 className="headline mt-3 text-3xl text-primary md:text-4xl">
-            Built on trust, one pipe at a time
+            <Text text={"Built on trust, one pipe at a time"} />
           </h2>
           <p className="mt-5 text-lg text-muted-foreground">
-            Our founder, {SITE.founder}, started in {SITE.founded} in Rayachoty, Kadapa Dist, with
-            one goal: quality pipes for drinking water, irrigation and drainage in the region. He
-            was one of the first to start a PVC pipe factory in Rayachoty.
+            <Text
+              text="Our founder, {founder}, started in {founded} in Rayachoty, Kadapa Dist, with one goal: quality pipes for drinking water, irrigation and drainage in the region. He was one of the first to start a PVC pipe factory in Rayachoty."
+              values={{ founder: SITE.founder, founded: SITE.founded }}
+            />
           </p>
           <p className="mt-4 text-lg text-muted-foreground">
-            Today {SITE.leaders.join(" and ")} lead the company. We make pipes from 20 mm to 200 mm
-            from virgin raw material on a German twin-screw RPVC plant. Star Pipes is one of the
-            best-known PVC pipe brands in Rayalaseema.
+            <Text
+              text="Today {leaders} lead the company. We make pipes from 20 mm to 200 mm from virgin raw material on a German twin-screw RPVC plant. Star Pipes is one of the best-known PVC pipe brands in Rayalaseema."
+              values={{ leaders: SITE.leaders.join(t(" and ")) }}
+            />
           </p>
         </div>
       </section>
@@ -93,8 +103,12 @@ function About() {
           {VALUES.map((v) => (
             <div key={v.title} className="rounded-2xl border bg-card p-6 shadow-soft">
               <v.icon className="size-10 text-accent" strokeWidth={1.75} />
-              <h3 className="mt-4 font-display text-xl font-bold text-primary">{v.title}</h3>
-              <p className="mt-2 text-muted-foreground">{v.text}</p>
+              <h3 className="mt-4 font-display text-xl font-bold text-primary">
+                <Text text={v.title} />
+              </h3>
+              <p className="mt-2 text-muted-foreground">
+                <Text text={v.text} />
+              </p>
             </div>
           ))}
         </div>

@@ -3,6 +3,21 @@
 BEGIN;
 SET LOCAL lock_timeout='5s';
 SET LOCAL statement_timeout='30s';
+-- Bucket creation/configuration belongs to the supported Storage Dashboard/API.
+-- Read metadata only; abort before creating application objects if setup differs.
+DO $$ BEGIN
+ IF NOT EXISTS (
+  SELECT 1 FROM storage.buckets
+  WHERE id='product-assets' AND name='product-assets' AND public=true
+    AND file_size_limit=5242880
+    AND cardinality(allowed_mime_types)=4
+    AND allowed_mime_types @> ARRAY['image/jpeg','image/png','image/webp','application/pdf']::text[]
+    AND allowed_mime_types <@ ARRAY['image/jpeg','image/png','image/webp','application/pdf']::text[]
+ ) THEN RAISE EXCEPTION 'Configure product-assets via the Storage Dashboard/API: public, 5242880 bytes, JPEG/PNG/WebP/PDF only'; END IF;
+ IF EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='storage' AND tablename='objects' AND cmd IN ('ALL','INSERT','UPDATE','DELETE')) THEN
+  RAISE EXCEPTION 'Existing Storage write policies require review before this migration';
+ END IF;
+END $$;
 CREATE TABLE public.admin_members(user_id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE, created_at timestamptz NOT NULL DEFAULT now());
 ALTER TABLE public.admin_members ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON public.admin_members FROM PUBLIC, anon, authenticated;
@@ -63,7 +78,16 @@ CREATE POLICY admin_update_products ON public.products FOR UPDATE TO authenticat
 CREATE POLICY admin_delete_products ON public.products FOR DELETE TO authenticated USING(public.is_admin());
 ALTER TABLE public.quote_requests DROP CONSTRAINT quote_product_check;
 ALTER TABLE public.quote_requests ADD CONSTRAINT quote_product_check CHECK(char_length(btrim(product)) BETWEEN 1 AND 100) NOT VALID;
--- No new public inserts: the server validates currently published product names.
+-- Keep the preserved static catalogue available before managed mode is enabled.
+-- Additional names must be published products; arbitrary/draft-only names fail.
+CREATE FUNCTION public.check_quote_product() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$ BEGIN
+ IF TG_OP='UPDATE' AND NEW.product IS NOT DISTINCT FROM OLD.product THEN RETURN NEW; END IF;
+ IF NEW.product IN ('PVC Pipes','Agricultural Pipes','Casing Pipes','UPVC Pipes','Electrical Pipes','Drip Pipes','Drip Fittings','Multiple products')
+    OR EXISTS(SELECT 1 FROM public.products p WHERE p.name=NEW.product AND p.published) THEN RETURN NEW; END IF;
+ RAISE EXCEPTION 'Choose an available product' USING ERRCODE='23514', CONSTRAINT='quote_product_catalogue_check';
+END $$;
+REVOKE ALL ON FUNCTION public.check_quote_product() FROM PUBLIC,anon,authenticated;
+CREATE TRIGGER quote_product_catalogue_check BEFORE INSERT OR UPDATE OF product ON public.quote_requests FOR EACH ROW EXECUTE FUNCTION public.check_quote_product();
 CREATE FUNCTION public.record_admin_change() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
 DECLARE entity text; old_s text; new_s text;
 BEGIN
@@ -91,7 +115,6 @@ CREATE FUNCTION public.admin_metrics() RETURNS jsonb LANGUAGE plpgsql SECURITY D
 END $$;
 REVOKE ALL ON FUNCTION public.admin_metrics() FROM PUBLIC,anon;
 GRANT EXECUTE ON FUNCTION public.admin_metrics() TO authenticated;
-INSERT INTO storage.buckets(id,name,public,file_size_limit,allowed_mime_types) VALUES('product-assets','product-assets',true,5242880,ARRAY['image/jpeg','image/png','image/webp','application/pdf']);
 CREATE POLICY admin_asset_insert ON storage.objects FOR INSERT TO authenticated WITH CHECK(bucket_id='product-assets' AND public.is_admin());
 -- Immutable paths prevent accidental replacement of live catalogue assets.
 CREATE TABLE public.notification_settings(id boolean PRIMARY KEY DEFAULT true CHECK(id),enabled boolean NOT NULL DEFAULT false,recipients text[] NOT NULL DEFAULT '{}' CHECK(cardinality(recipients)<=10));
@@ -102,7 +125,7 @@ GRANT SELECT ON public.notification_settings TO authenticated;
 GRANT UPDATE(enabled,recipients) ON public.notification_settings TO authenticated;
 CREATE POLICY admin_notification_settings ON public.notification_settings FOR ALL TO authenticated USING(public.is_admin()) WITH CHECK(public.is_admin());
 CREATE TRIGGER notification_settings_audit AFTER UPDATE ON public.notification_settings FOR EACH ROW EXECUTE FUNCTION public.record_admin_change();
-CREATE TABLE public.notification_outbox(id uuid PRIMARY KEY DEFAULT gen_random_uuid(), enquiry_id uuid NOT NULL REFERENCES public.quote_requests(id),kind text NOT NULL DEFAULT 'new' CHECK(kind IN ('new','followup')),followup_on timestamptz,recipients text[] NOT NULL,sender text,site_origin text,UNIQUE NULLS NOT DISTINCT(enquiry_id,kind,followup_on), created_at timestamptz NOT NULL DEFAULT now(), state text NOT NULL DEFAULT 'pending' CHECK(state IN ('pending','sending','sent','failed')), attempts integer NOT NULL DEFAULT 0, available_at timestamptz NOT NULL DEFAULT now(), lease_id uuid, lease_until timestamptz, provider_id text);
+CREATE TABLE public.notification_outbox(id uuid PRIMARY KEY DEFAULT gen_random_uuid(), enquiry_id uuid NOT NULL REFERENCES public.quote_requests(id),kind text NOT NULL DEFAULT 'new' CHECK(kind IN ('new','followup')),followup_on timestamptz,recipients text[] NOT NULL,sender text,site_origin text,UNIQUE NULLS NOT DISTINCT(enquiry_id,kind,followup_on), created_at timestamptz NOT NULL DEFAULT now(), state text NOT NULL DEFAULT 'pending' CHECK(state IN ('pending','sending','sent','failed','cancelled')), attempts integer NOT NULL DEFAULT 0, available_at timestamptz NOT NULL DEFAULT now(), lease_id uuid, lease_until timestamptz, provider_id text);
 ALTER TABLE public.notification_outbox ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON public.notification_outbox FROM PUBLIC,anon,authenticated;
 GRANT SELECT ON public.notification_outbox TO authenticated;
@@ -118,6 +141,10 @@ GRANT notification_worker TO authenticator;
 GRANT USAGE ON SCHEMA public TO notification_worker;
 CREATE FUNCTION public.claim_notification_jobs(sender_address text, site_address text) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$ DECLARE jobs jsonb; BEGIN
  IF NOT EXISTS(SELECT 1 FROM public.notification_settings WHERE id AND enabled) THEN RETURN '[]'; END IF;
+ UPDATE public.notification_outbox j SET state='cancelled'
+ WHERE j.kind='followup' AND (j.state='pending' OR (j.state='sending' AND j.lease_until<now()))
+ AND EXISTS(SELECT 1 FROM public.quote_requests q WHERE q.id=j.enquiry_id
+   AND (q.status IN ('Converted','Closed') OR q.follow_up_at IS DISTINCT FROM j.followup_on));
  INSERT INTO public.notification_outbox(enquiry_id,kind,followup_on,recipients) SELECT q.id,'followup',q.follow_up_at,s.recipients FROM public.quote_requests q CROSS JOIN public.notification_settings s WHERE s.id AND s.enabled AND q.follow_up_at<=now() AND q.status NOT IN ('Converted','Closed') ON CONFLICT(enquiry_id,kind,followup_on) DO NOTHING;
  UPDATE public.notification_outbox SET state='failed' WHERE state IN ('pending','sending') AND (attempts>=8 OR created_at<now()-interval '23 hours');
  WITH candidates AS (SELECT id FROM public.notification_outbox WHERE attempts<8 AND created_at>now()-interval '23 hours' AND ((state='pending' AND available_at<=now()) OR (state='sending' AND lease_until<now())) ORDER BY created_at FOR UPDATE SKIP LOCKED LIMIT 10), claimed AS (UPDATE public.notification_outbox j SET state='sending',sender=coalesce(j.sender,sender_address),site_origin=coalesce(j.site_origin,site_address),attempts=attempts+1,lease_id=gen_random_uuid(),lease_until=now()+interval '5 minutes' FROM candidates c WHERE j.id=c.id RETURNING j.id,j.enquiry_id,j.lease_id,j.kind,j.recipients,j.sender,j.site_origin)

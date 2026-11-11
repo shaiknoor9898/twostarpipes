@@ -1,5 +1,8 @@
 -- REVIEW DRAFT. Explicitly apply to disposable staging first. Never auto-run.
 -- Requires owner privileges; brief lock timeout avoids waiting on production traffic.
+-- Supported starting states: original migration OR restricted staging bootstrap
+-- with no policies/public grants and RLS already enabled/forced. No old policy is required.
+-- Apply once only: an existing quote_writer role or conflicting constraints need review.
 BEGIN;
 SET LOCAL lock_timeout = '5s';
 SET LOCAL statement_timeout = '30s';

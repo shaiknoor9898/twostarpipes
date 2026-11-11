@@ -62,8 +62,11 @@ export async function deliverNotifications() {
     site_address: origin.origin,
   });
   if (claim.error) throw new Error("Notification queue unavailable");
-  if (Array.isArray(claim.data) && claim.data.length === 0) return { processed: 0 };
+  if (Array.isArray(claim.data) && claim.data.length === 0)
+    return { processed: 0, delivered: 0, failed: 0 };
   const batch = z.object({ jobs: z.array(jobSchema).max(10) }).parse(claim.data);
+  let deliveredCount = 0;
+  let failedCount = 0;
   for (const job of batch.jobs) {
     let delivered = false,
       provider: string | null = null;
@@ -99,6 +102,13 @@ export async function deliverNotifications() {
       provider,
     });
     if (finished.error) throw new Error("Notification acknowledgement unavailable");
+    if (delivered) deliveredCount++;
+    else failedCount++;
   }
-  return { processed: batch.jobs.length };
+  if (failedCount)
+    console.warn("Notification batch requires retry", {
+      category: "provider",
+      failed: failedCount,
+    });
+  return { processed: batch.jobs.length, delivered: deliveredCount, failed: failedCount };
 }

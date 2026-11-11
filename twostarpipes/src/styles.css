@@ -132,6 +132,22 @@
   --shadow-lift: 0 20px 45px -18px oklch(0.32 0.13 262 / 0.35);
 }
 
+/* Navy/charcoal surfaces with green actions; photos and brand artwork stay intact. */
+html[lang="te"] body,
+html[lang="te"] .font-display,
+html[lang="te"] .headline,
+html[lang="te"] input,
+html[lang="te"] select,
+html[lang="te"] button,
+html[lang="te"] textarea {
+  font-family: "Noto Sans Telugu", "Nirmala UI", system-ui, sans-serif;
+}
+html[lang="te"] .headline {
+  font-style: normal;
+  line-height: 1.45;
+  letter-spacing: normal;
+}
+
 @layer base {
   * {
     border-color: var(--color-border);

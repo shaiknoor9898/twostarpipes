@@ -20,7 +20,9 @@ afterEach(() => {
 });
 beforeEach(() => {
   send.mockReset();
-  vi.stubGlobal("crypto", { randomUUID: () => "12345678-1234-4234-8234-123456789012" });
+  vi.stubGlobal("crypto", {
+    randomUUID: vi.fn().mockReturnValue("12345678-1234-4234-8234-123456789012"),
+  });
 });
 function fill() {
   fireEvent.click(screen.getByRole("button", { name: "Solve challenge" }));
@@ -70,6 +72,30 @@ it.each(["returned", "thrown"])("retains input and permits retry after %s errors
   fireEvent.click(screen.getByRole("button", { name: "Solve challenge" }));
   fireEvent.click(screen.getByRole("button", { name: "Request a Quote" }));
   await screen.findByText("Request received");
+  expect(send.mock.calls[1]![0].data.requestId).toBe(send.mock.calls[0]![0].data.requestId);
+  expect(crypto.randomUUID).toHaveBeenCalledTimes(1);
+});
+
+it("generates a new request ID when the customer edits a failed request", async () => {
+  const secondId = "87654321-4321-4321-8321-210987654321";
+  vi.mocked(crypto.randomUUID)
+    .mockReturnValueOnce("12345678-1234-4234-8234-123456789012")
+    .mockReturnValueOnce(secondId);
+  send
+    .mockResolvedValueOnce({ ok: false, error: "Please retry." })
+    .mockResolvedValueOnce({ ok: true });
+  render(<QuoteForm />);
+  fill();
+  fireEvent.click(screen.getByRole("button", { name: "Request a Quote" }));
+  await screen.findByRole("alert");
+  fireEvent.change(screen.getByLabelText("Phone / WhatsApp *"), {
+    target: { value: "1234567890" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Solve challenge" }));
+  fireEvent.click(screen.getByRole("button", { name: "Request a Quote" }));
+  await screen.findByText("Request received");
+  expect(send.mock.calls[1]![0].data.requestId).toBe(secondId);
+  expect(crypto.randomUUID).toHaveBeenCalledTimes(2);
 });
 
 it("does not send valid lead fields without a completed challenge", () => {

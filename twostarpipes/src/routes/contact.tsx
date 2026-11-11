@@ -1,3 +1,5 @@
+import { Text } from "@/components/site/SitePreferences";
+import { useSitePreferences } from "@/lib/site-preferences";
 import { getCatalogue } from "@/lib/catalogue.functions";
 import { createFileRoute } from "@tanstack/react-router";
 import { Clock, Mail, MapPin, Phone } from "lucide-react";
@@ -28,6 +30,7 @@ export const Route = createFileRoute("/contact")({
 });
 
 function Contact() {
+  const { t } = useSitePreferences();
   const products = Route.useLoaderData();
   const items = [
     { icon: Phone, label: "Call us", value: SITE.phone, href: SITE.phoneHref },
@@ -41,12 +44,18 @@ function Contact() {
     <>
       <section className="mx-auto grid max-w-7xl gap-8 px-4 py-8 md:px-6 md:py-12 lg:grid-cols-[3fr_2fr]">
         <div>
-          <p className="eyebrow">Get a Quote</p>
+          <p className="eyebrow">
+            <Text text={"Get a Quote"} />
+          </p>
           <h1 className="headline mt-2 text-3xl text-primary md:text-5xl">
-            Your details — we call you back
+            <Text text={"Your details — we call you back"} />
           </h1>
           <p className="mb-6 mt-3 text-muted-foreground">
-            Farmers, dealers and wholesalers: fill in your name, phone and the pipes you need.
+            <Text
+              text={
+                "Farmers, dealers and wholesalers: fill in your name, phone and the pipes you need."
+              }
+            />
           </p>
           <QuoteForm products={products} />
         </div>
@@ -58,9 +67,11 @@ function Contact() {
                   <it.icon className="size-6" />
                 </span>
                 <span className="min-w-0">
-                  <span className="block text-sm text-muted-foreground">{it.label}</span>
+                  <span className="block text-sm text-muted-foreground">
+                    <Text text={it.label} />
+                  </span>
                   <span className="block break-words font-display text-base font-semibold text-primary md:text-lg">
-                    {it.value}
+                    <Text text={it.value} />
                   </span>
                 </span>
               </>
@@ -69,6 +80,8 @@ function Contact() {
               <li key={it.label}>
                 {it.href ? (
                   <a
+                    target={it.href === SITE.whatsappHref ? "_blank" : undefined}
+                    rel={it.href === SITE.whatsappHref ? "noopener noreferrer" : undefined}
                     href={it.href}
                     className="flex items-center gap-4 rounded-2xl border bg-card p-4 transition-shadow hover:shadow-soft"
                   >
@@ -87,7 +100,7 @@ function Contact() {
       <section className="mx-auto max-w-7xl px-4 pb-16 md:px-6 md:pb-24">
         <div className="overflow-hidden rounded-3xl border bg-card shadow-soft">
           <iframe
-            title="Two Star Pipes Industries location map"
+            title={t("Two Star Pipes Industries location map")}
             src={SITE.mapEmbed}
             loading="lazy"
             className="h-[320px] w-full border-0 md:h-[400px]"

@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-const root = ".output/public";
+const root = process.argv[2] || ".output/public";
 const forbidden = [
   "TURNSTILE_SECRET_KEY",
   "UPSTASH_REDIS_REST_TOKEN",

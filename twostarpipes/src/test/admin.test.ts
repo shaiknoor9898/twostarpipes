@@ -165,4 +165,18 @@ it("rejects unsafe product URLs and preserves a valid built-in image reference",
   expect(productSchema.safeParse(base).success).toBe(true);
   expect(productSchema.safeParse({ ...base, image: "javascript:alert(1)" }).success).toBe(false);
   expect(productSchema.safeParse({ ...base, slug: "../escape" }).success).toBe(false);
+  expect(
+    productSchema.safeParse({ ...base, image: "https://fixture:password@example.com/image.png" })
+      .success,
+  ).toBe(false);
+  expect(productSchema.safeParse({ ...base, brochure: "builtin:pvc" }).success).toBe(false);
+  expect(
+    productSchema.safeParse({
+      ...base,
+      brochure: "https://fixture:password@example.com/catalogue.pdf",
+    }).success,
+  ).toBe(false);
+  expect(
+    productSchema.safeParse({ ...base, brochure: "https://example.com/catalogue.pdf" }).success,
+  ).toBe(true);
 });

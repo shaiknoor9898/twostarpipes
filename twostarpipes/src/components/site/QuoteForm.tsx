@@ -1,3 +1,5 @@
+import { Text } from "@/components/site/SitePreferences";
+import { useSitePreferences } from "@/lib/site-preferences";
 import { Turnstile } from "./Turnstile";
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
@@ -20,6 +22,7 @@ export function QuoteForm({
   defaultType?: (typeof CUSTOMER_TYPES)[number];
   products?: { name: string }[];
 }) {
+  const { t } = useSitePreferences();
   const send = useServerFn(submitQuote);
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => setHydrated(true), []);
@@ -87,10 +90,14 @@ export function QuoteForm({
     return (
       <div className="flex flex-col items-center rounded-2xl border bg-card p-10 text-center shadow-soft">
         <CheckCircle2 className="size-14 text-accent" />
-        <h3 className="headline mt-4 text-2xl text-primary">Request received</h3>
-        <p className="mt-2 text-muted-foreground">Thank you. Our team will contact you soon.</p>
+        <h3 className="headline mt-4 text-2xl text-primary">
+          <Text text={"Request received"} />
+        </h3>
+        <p className="mt-2 text-muted-foreground">
+          <Text text={"Thank you. Our team will contact you soon."} />
+        </p>
         <Button variant="leafOutline" className="mt-6" onClick={() => setStatus("idle")}>
-          Send another request
+          <Text text={"Send another request"} />
         </Button>
       </div>
     );
@@ -99,7 +106,7 @@ export function QuoteForm({
   const err = (k: string) =>
     errors[k] && (
       <p id={`${k}-error`} role="alert" className="mt-1 text-sm text-destructive">
-        {errors[k]}
+        <Text text={errors[k]} />
       </p>
     );
 
@@ -111,7 +118,9 @@ export function QuoteForm({
       className="grid gap-4 rounded-2xl border bg-card p-6 shadow-soft md:grid-cols-2 md:p-8"
     >
       <div>
-        <Label htmlFor="name">Your name *</Label>
+        <Label htmlFor="name">
+          <Text text={"Your name *"} />
+        </Label>
         <Input
           id="name"
           aria-invalid={!!errors["name"]}
@@ -123,7 +132,9 @@ export function QuoteForm({
         {err("name")}
       </div>
       <div>
-        <Label htmlFor="phone">Phone / WhatsApp *</Label>
+        <Label htmlFor="phone">
+          <Text text={"Phone / WhatsApp *"} />
+        </Label>
         <Input
           id="phone"
           aria-invalid={!!errors["phone"]}
@@ -137,7 +148,9 @@ export function QuoteForm({
         {err("phone")}
       </div>
       <div>
-        <Label htmlFor="customer_type">I am a *</Label>
+        <Label htmlFor="customer_type">
+          <Text text={"I am a *"} />
+        </Label>
         <select
           id="customer_type"
           aria-invalid={!!errors["customer_type"]}
@@ -146,16 +159,28 @@ export function QuoteForm({
           defaultValue={defaultType}
           className={`${selectClass} mt-1.5`}
         >
-          <option value="farmer">Farmer</option>
-          <option value="dealer">Dealer</option>
-          <option value="wholesaler">Wholesaler</option>
-          <option value="contractor">Contractor / Builder</option>
-          <option value="other">Other</option>
+          <option value="farmer">
+            <Text text={"Farmer"} />
+          </option>
+          <option value="dealer">
+            <Text text={"Dealer"} />
+          </option>
+          <option value="wholesaler">
+            <Text text={"Wholesaler"} />
+          </option>
+          <option value="contractor">
+            <Text text={"Contractor / Builder"} />
+          </option>
+          <option value="other">
+            <Text text={"Other"} />
+          </option>
         </select>
         {err("customer_type")}
       </div>
       <div>
-        <Label htmlFor="product">Product *</Label>
+        <Label htmlFor="product">
+          <Text text={"Product *"} />
+        </Label>
         <select
           id="product"
           aria-invalid={!!errors["product"]}
@@ -165,19 +190,23 @@ export function QuoteForm({
           className={`${selectClass} mt-1.5`}
         >
           <option value="" disabled>
-            Choose a product
+            <Text text={"Choose a product"} />
           </option>
           {products.map((p) => (
             <option key={p.name} value={p.name}>
-              {p.name}
+              <Text text={p.name} />
             </option>
           ))}
-          <option value="Multiple products">Multiple products</option>
+          <option value="Multiple products">
+            <Text text={"Multiple products"} />
+          </option>
         </select>
         {err("product")}
       </div>
       <div>
-        <Label htmlFor="city">Village / City</Label>
+        <Label htmlFor="city">
+          <Text text={"Village / City"} />
+        </Label>
         <Input
           id="city"
           aria-invalid={!!errors["city"]}
@@ -189,20 +218,24 @@ export function QuoteForm({
         {err("city")}
       </div>
       <div>
-        <Label htmlFor="quantity">Quantity needed</Label>
+        <Label htmlFor="quantity">
+          <Text text={"Quantity needed"} />
+        </Label>
         <Input
           id="quantity"
           aria-invalid={!!errors["quantity"]}
           aria-describedby={errors["quantity"] ? "quantity-error" : undefined}
           name="quantity"
-          placeholder="e.g. 100 pipes, 63 mm"
+          placeholder={t("e.g. 100 pipes, 63 mm")}
           className="mt-1.5 h-11"
           maxLength={100}
         />
         {err("quantity")}
       </div>
       <div className="md:col-span-2">
-        <Label htmlFor="email">Email (optional)</Label>
+        <Label htmlFor="email">
+          <Text text={"Email (optional)"} />
+        </Label>
         <Input
           id="email"
           aria-invalid={!!errors["email"]}
@@ -215,7 +248,9 @@ export function QuoteForm({
         {err("email")}
       </div>
       <div className="md:col-span-2">
-        <Label htmlFor="message">Message</Label>
+        <Label htmlFor="message">
+          <Text text={"Message"} />
+        </Label>
         <Textarea
           id="message"
           aria-invalid={!!errors["message"]}
@@ -232,7 +267,7 @@ export function QuoteForm({
       </div>
       {serverError && (
         <p role="alert" className="text-sm text-destructive md:col-span-2">
-          {serverError}
+          <Text text={serverError} />
         </p>
       )}
       <div className="md:col-span-2">
@@ -244,7 +279,7 @@ export function QuoteForm({
           className="w-full md:w-auto"
         >
           {status === "sending" ? <Loader2 className="animate-spin" /> : <Send />}
-          Request a Quote
+          <Text text={"Request a Quote"} />
         </Button>
       </div>
     </form>

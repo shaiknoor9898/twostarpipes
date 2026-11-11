@@ -6,6 +6,7 @@ export function NotificationSettings({ accessToken }: { accessToken: string }) {
   const [enabled, setEnabled] = useState(false),
     [recipients, setRecipients] = useState(""),
     [busy, setBusy] = useState(true),
+    [loaded, setLoaded] = useState(false),
     [message, setMessage] = useState("");
   const [jobs, setJobs] = useState<
     { id: string; state: string; attempts: number; created_at: string }[]
@@ -15,10 +16,16 @@ export function NotificationSettings({ accessToken }: { accessToken: string }) {
   useEffect(() => {
     let active = true;
     setBusy(true);
+    setLoaded(false);
+    setEnabled(false);
+    setRecipients("");
+    setJobs([]);
+    setMessage("");
     void load({ data: { accessToken } })
       .then((result) => {
         if (!active) return;
         if (result.ok) {
+          setLoaded(true);
           setEnabled(result.value.settings.enabled);
           setRecipients(result.value.settings.recipients.join("\n"));
           setJobs(result.value.jobs);
@@ -39,6 +46,7 @@ export function NotificationSettings({ accessToken }: { accessToken: string }) {
       className="grid max-w-2xl gap-4 rounded-2xl border bg-card p-6"
       onSubmit={async (e) => {
         e.preventDefault();
+        if (busy || !loaded) return;
         setBusy(true);
         try {
           const result = await save({
@@ -68,22 +76,28 @@ export function NotificationSettings({ accessToken }: { accessToken: string }) {
         Configure the provider and scheduled worker before enabling.
       </p>
       {message && <p role="status">{message}</p>}
-      <label className="flex items-center gap-2">
-        <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} />
-        Enable new-enquiry email notifications
-      </label>
-      <label>
-        Recipients (one email per line, at most 10)
-        <textarea
-          className="mt-2 w-full rounded-md border bg-background p-3"
-          value={recipients}
-          onChange={(e) => setRecipients(e.target.value)}
-          rows={4}
-        />
-      </label>
-      <Button disabled={busy}>{busy ? "Working…" : "Save notification settings"}</Button>
+      <fieldset disabled={busy || !loaded} className="contents">
+        <label className="flex items-center gap-2">
+          <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} />
+          Enable new-enquiry email notifications
+        </label>
+        <label>
+          Recipients (one email per line, at most 10)
+          <textarea
+            className="mt-2 w-full rounded-md border bg-background p-3"
+            value={recipients}
+            onChange={(e) => setRecipients(e.target.value)}
+            rows={4}
+          />
+        </label>
+        <Button disabled={busy || !loaded}>
+          {busy ? "Working…" : "Save notification settings"}
+        </Button>
+      </fieldset>
       <h3 className="font-semibold">Recent delivery jobs</h3>
-      {!jobs.length ? (
+      {!loaded ? (
+        <p>Delivery jobs are unavailable until settings load successfully.</p>
+      ) : !jobs.length ? (
         <p>No jobs queued.</p>
       ) : (
         <ul>

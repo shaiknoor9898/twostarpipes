@@ -1,3 +1,5 @@
+import { Text } from "@/components/site/SitePreferences";
+import { useSitePreferences } from "@/lib/site-preferences";
 import { getCatalogue } from "@/lib/catalogue.functions";
 import { createFileRoute } from "@tanstack/react-router";
 import { BadgeIndianRupee, Boxes, Headset, Truck } from "lucide-react";
@@ -47,6 +49,7 @@ const BENEFITS = [
 ];
 
 function Dealers() {
+  const { t } = useSitePreferences();
   const products = Route.useLoaderData();
   return (
     <>
@@ -55,7 +58,9 @@ function Dealers() {
         title="Grow your business with Two Star"
         image={warehouse}
       >
-        Our dealers and wholesalers have trusted us for decades. Join the network today.
+        <Text
+          text={"Our dealers and wholesalers have trusted us for decades. Join the network today."}
+        />
       </PageHeader>
 
       <section className="mx-auto max-w-7xl px-4 py-16 md:px-6 md:py-24">
@@ -63,20 +68,28 @@ function Dealers() {
           {BENEFITS.map((b) => (
             <div key={b.title} className="rounded-2xl border bg-card p-6 shadow-soft">
               <b.icon className="size-10 text-accent" strokeWidth={1.75} />
-              <h3 className="mt-4 font-display text-xl font-bold text-primary">{b.title}</h3>
-              <p className="mt-2 text-muted-foreground">{b.text}</p>
+              <h3 className="mt-4 font-display text-xl font-bold text-primary">
+                <Text text={b.title} />
+              </h3>
+              <p className="mt-2 text-muted-foreground">
+                <Text text={b.text} />
+              </p>
             </div>
           ))}
         </div>
 
         <div className="mt-16 grid gap-10 lg:grid-cols-[2fr_3fr]">
           <div>
-            <p className="eyebrow">Dealer Enquiry</p>
+            <p className="eyebrow">
+              <Text text={"Dealer Enquiry"} />
+            </p>
             <h2 className="headline mt-3 text-3xl text-primary md:text-4xl">
-              Apply to become a dealer
+              <Text text={"Apply to become a dealer"} />
             </h2>
             <p className="mt-4 text-lg text-muted-foreground">
-              Share your details and our sales team will call you with dealer pricing.
+              <Text
+                text={"Share your details and our sales team will call you with dealer pricing."}
+              />
             </p>
           </div>
           <QuoteForm defaultType="dealer" products={products} />

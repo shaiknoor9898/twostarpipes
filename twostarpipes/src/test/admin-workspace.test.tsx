@@ -65,6 +65,10 @@ afterEach(cleanup);
 it("loads and updates enquiries through authenticated functions", async () => {
   render(<Admin />);
   fireEvent.click(await screen.findByRole("button", { name: /Fixture Customer/ }));
+  const whatsapp = screen.getByRole("link", { name: "Open company WhatsApp" });
+  expect(whatsapp).toHaveAttribute("href", "https://wa.me/919505503550");
+  expect(whatsapp).toHaveAttribute("target", "_blank");
+  expect(screen.getByText(new RegExp(row.phone))).toBeVisible();
   fireEvent.change(screen.getAllByLabelText("Status")[1]!, { target: { value: "Contacted" } });
   fireEvent.change(screen.getByLabelText("Internal notes"), {
     target: { value: "Follow up tomorrow" },

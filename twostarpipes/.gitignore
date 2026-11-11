@@ -39,3 +39,6 @@ dist-ssr
 # Local browser QA artifacts (may contain fixture/customer information)
 /test-results/
 /playwright-report/
+
+# Vercel project linkage and generated server build
+.vercel/

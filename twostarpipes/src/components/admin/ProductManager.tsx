@@ -30,6 +30,7 @@ export function ProductManager({ accessToken }: { accessToken: string }) {
   const [items, setItems] = useState<ManagedProduct[]>([]),
     [editing, setEditing] = useState<ManagedProduct | null>(null),
     [busy, setBusy] = useState(false),
+    [loaded, setLoaded] = useState(false),
     [message, setMessage] = useState("");
   const list = useServerFn(adminProducts),
     save = useServerFn(adminSaveProduct),
@@ -38,14 +39,19 @@ export function ProductManager({ accessToken }: { accessToken: string }) {
     seed = useServerFn(adminImportCatalogue);
   const reload = useCallback(async () => {
     setBusy(true);
+    setLoaded(false);
     try {
       const result = await list({ data: { accessToken } });
-      if (result.ok) setItems(result.value);
-      else {
+      if (result.ok) {
+        setItems(result.value);
+        setLoaded(true);
+      } else {
         setItems([]);
         setMessage(result.error);
       }
     } catch {
+      setItems([]);
+      setEditing(null);
       setMessage("Products unavailable.");
     } finally {
       setBusy(false);
@@ -58,7 +64,7 @@ export function ProductManager({ accessToken }: { accessToken: string }) {
   }, [reload]);
   async function persist(event: React.FormEvent) {
     event.preventDefault();
-    if (!editing) return;
+    if (!editing || busy || !loaded) return;
     const parsed = productSchema.safeParse({
       ...editing,
       uses: editing.uses.filter((v) => v.trim()),
@@ -87,13 +93,16 @@ export function ProductManager({ accessToken }: { accessToken: string }) {
     }
   }
   async function asset(file: File | undefined, kind: "image" | "brochure") {
-    if (!file || !editing) return;
+    if (!file || !editing || busy || !loaded) return;
     if (file.size > 5 * 1024 * 1024) {
       setMessage("File must be at most 5 MB.");
       return;
     }
     const allowed = ["image/jpeg", "image/png", "image/webp", "application/pdf"] as const;
-    if (!allowed.includes(file.type as (typeof allowed)[number])) {
+    if (
+      !allowed.includes(file.type as (typeof allowed)[number]) ||
+      (kind === "brochure") !== (file.type === "application/pdf")
+    ) {
       setMessage("Use JPEG, PNG, WebP or PDF.");
       return;
     }
@@ -134,7 +143,7 @@ export function ProductManager({ accessToken }: { accessToken: string }) {
       )}
       <div className="my-4 flex flex-wrap gap-3">
         <Button
-          disabled={busy}
+          disabled={busy || !loaded}
           onClick={() => {
             setEditing({ ...empty });
             setMessage("");
@@ -144,7 +153,7 @@ export function ProductManager({ accessToken }: { accessToken: string }) {
         </Button>
         <Button
           variant="outline"
-          disabled={busy}
+          disabled={busy || !loaded}
           onClick={async () => {
             setBusy(true);
             try {
@@ -169,13 +178,14 @@ export function ProductManager({ accessToken }: { accessToken: string }) {
         </Button>
       </div>
       {busy && <p role="status">Working…</p>}
-      {!busy && !items.length && (
+      {!busy && loaded && !items.length && (
         <p>No products available. Configure the staging database and import the catalogue.</p>
       )}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {items.map((p) => (
           <button
             key={p.slug}
+            disabled={busy || !loaded}
             className="rounded-xl border bg-card p-5 text-left"
             onClick={() => setEditing(p)}
           >
@@ -191,103 +201,105 @@ export function ProductManager({ accessToken }: { accessToken: string }) {
           onSubmit={persist}
           className="mt-8 grid gap-4 rounded-2xl border bg-card p-6 md:grid-cols-2"
         >
-          <h3 className="text-xl font-semibold md:col-span-2">Edit product</h3>
-          {(["slug", "name", "category", "short", "image", "brochure"] as const).map((key) => (
-            <label key={key} className="capitalize">
-              {key}
+          <fieldset disabled={busy || !loaded} className="contents">
+            <h3 className="text-xl font-semibold md:col-span-2">Edit product</h3>
+            {(["slug", "name", "category", "short", "image", "brochure"] as const).map((key) => (
+              <label key={key} className="capitalize">
+                {key}
+                <input
+                  className={field}
+                  value={editing[key]}
+                  disabled={key === "slug" && items.some((p) => p.slug === editing.slug)}
+                  onChange={(e) => setEditing({ ...editing, [key]: e.target.value })}
+                  required={key !== "brochure"}
+                />
+              </label>
+            ))}
+            {(["description", "specifications"] as const).map((key) => (
+              <label key={key} className="capitalize md:col-span-2">
+                {key}
+                <textarea
+                  className={field}
+                  rows={4}
+                  value={editing[key]}
+                  onChange={(e) => setEditing({ ...editing, [key]: e.target.value })}
+                />
+              </label>
+            ))}
+            {(["uses", "sizes", "gauges", "advantages"] as const).map((key) => (
+              <label key={key} className="capitalize">
+                {key} (one per line)
+                <textarea
+                  className={field}
+                  rows={4}
+                  value={editing[key].join("\n")}
+                  onChange={(e) => setEditing({ ...editing, [key]: e.target.value.split("\n") })}
+                />
+              </label>
+            ))}
+            <label>
+              Upload image (JPEG / PNG / WebP, max 5 MB)
               <input
-                className={field}
-                value={editing[key]}
-                disabled={key === "slug" && items.some((p) => p.slug === editing.slug)}
-                onChange={(e) => setEditing({ ...editing, [key]: e.target.value })}
-                required={key !== "brochure"}
-              />
-            </label>
-          ))}
-          {(["description", "specifications"] as const).map((key) => (
-            <label key={key} className="capitalize md:col-span-2">
-              {key}
-              <textarea
-                className={field}
-                rows={4}
-                value={editing[key]}
-                onChange={(e) => setEditing({ ...editing, [key]: e.target.value })}
-              />
-            </label>
-          ))}
-          {(["uses", "sizes", "gauges", "advantages"] as const).map((key) => (
-            <label key={key} className="capitalize">
-              {key} (one per line)
-              <textarea
-                className={field}
-                rows={4}
-                value={editing[key].join("\n")}
-                onChange={(e) => setEditing({ ...editing, [key]: e.target.value.split("\n") })}
-              />
-            </label>
-          ))}
-          <label>
-            Upload image (JPEG / PNG / WebP, max 5 MB)
-            <input
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              disabled={busy}
-              onChange={(e) => void asset(e.target.files?.[0], "image")}
-            />
-          </label>
-          <label>
-            Upload brochure (PDF, max 5 MB)
-            <input
-              type="file"
-              accept="application/pdf"
-              disabled={busy}
-              onChange={(e) => void asset(e.target.files?.[0], "brochure")}
-            />
-          </label>
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={editing.published}
-              onChange={(e) => setEditing({ ...editing, published: e.target.checked })}
-            />
-            Published
-          </label>
-          <div className="flex flex-wrap gap-3 md:col-span-2">
-            <Button disabled={busy}>Save product</Button>
-            <Button type="button" variant="outline" onClick={() => setEditing(null)}>
-              Cancel
-            </Button>
-            {items.some((p) => p.slug === editing.slug) && (
-              <Button
-                type="button"
-                variant="destructive"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
                 disabled={busy}
-                onClick={async () => {
-                  if (
-                    !window.confirm(
-                      `Delete ${editing.name}? Existing enquiry records will be retained.`,
-                    )
-                  )
-                    return;
-                  setBusy(true);
-                  try {
-                    const result = await remove({ data: { accessToken, slug: editing.slug } });
-                    if (result.ok) {
-                      setEditing(null);
-                      setMessage("Product deleted. Enquiry history retained.");
-                      await reload();
-                    } else setMessage(result.error);
-                  } catch {
-                    setMessage("Deletion failed.");
-                  } finally {
-                    setBusy(false);
-                  }
-                }}
-              >
-                Delete product
+                onChange={(e) => void asset(e.target.files?.[0], "image")}
+              />
+            </label>
+            <label>
+              Upload brochure (PDF, max 5 MB)
+              <input
+                type="file"
+                accept="application/pdf"
+                disabled={busy}
+                onChange={(e) => void asset(e.target.files?.[0], "brochure")}
+              />
+            </label>
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={editing.published}
+                onChange={(e) => setEditing({ ...editing, published: e.target.checked })}
+              />
+              Published
+            </label>
+            <div className="flex flex-wrap gap-3 md:col-span-2">
+              <Button disabled={busy}>Save product</Button>
+              <Button type="button" variant="outline" onClick={() => setEditing(null)}>
+                Cancel
               </Button>
-            )}
-          </div>
+              {items.some((p) => p.slug === editing.slug) && (
+                <Button
+                  type="button"
+                  variant="destructive"
+                  disabled={busy}
+                  onClick={async () => {
+                    if (
+                      !window.confirm(
+                        `Delete ${editing.name}? Existing enquiry records will be retained.`,
+                      )
+                    )
+                      return;
+                    setBusy(true);
+                    try {
+                      const result = await remove({ data: { accessToken, slug: editing.slug } });
+                      if (result.ok) {
+                        setEditing(null);
+                        setMessage("Product deleted. Enquiry history retained.");
+                        await reload();
+                      } else setMessage(result.error);
+                    } catch {
+                      setMessage("Deletion failed.");
+                    } finally {
+                      setBusy(false);
+                    }
+                  }}
+                >
+                  Delete product
+                </Button>
+              )}
+            </div>
+          </fieldset>
         </form>
       )}
     </div>

@@ -1,3 +1,5 @@
+import { Text } from "@/components/site/SitePreferences";
+import { useSitePreferences } from "@/lib/site-preferences";
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import {
@@ -33,7 +35,11 @@ const SLIDES: Slide[] = [
     eyebrow: `Celebrating ${SITE.years} Years · ${SITE.slogan}`,
     title: (
       <>
-        {SITE.years} Years of Trust in <span className="text-leaf">Pipe Manufacturing</span>
+        {SITE.years}
+        <Text text={" Years of Trust in "} />
+        <span className="text-leaf">
+          <Text text={"Pipe Manufacturing"} />
+        </span>
       </>
     ),
     text: "Thank you, farmers, dealers and wholesalers, for growing with us.",
@@ -45,7 +51,10 @@ const SLIDES: Slide[] = [
     eyebrow: "Agricultural & Casing Pipes",
     title: (
       <>
-        Water for every field, <span className="text-leaf">pipes for every farmer</span>
+        <Text text={"Water for every field, "} />
+        <span className="text-leaf">
+          <Text text={"pipes for every farmer"} />
+        </span>
       </>
     ),
     text: "PVC, agricultural, drip and borewell casing pipes — direct from our factory.",
@@ -56,7 +65,10 @@ const SLIDES: Slide[] = [
     eyebrow: SITE.slogan,
     title: (
       <>
-        Factory-direct prices for <span className="text-leaf">dealers & farmers</span>
+        <Text text={"Factory-direct prices for "} />
+        <span className="text-leaf">
+          <Text text={"dealers & farmers"} />
+        </span>
       </>
     ),
     text: "PVC, UPVC, casing, electrical and drip pipes in 4 & 6 kgf/cm² classes.",
@@ -64,6 +76,7 @@ const SLIDES: Slide[] = [
 ];
 
 export function HeroSlider() {
+  const { t } = useSitePreferences();
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const [hovered, setHovered] = useState(false);
@@ -93,7 +106,7 @@ export function HeroSlider() {
       onBlurCapture={(e) => {
         if (!e.currentTarget.contains(e.relatedTarget)) setFocused(false);
       }}
-      aria-label="Two Star Pipes highlights"
+      aria-label={t("Two Star Pipes highlights")}
       aria-roledescription="carousel"
     >
       <div
@@ -108,7 +121,7 @@ export function HeroSlider() {
           >
             <img
               src={s.image}
-              alt={s.alt}
+              alt={t(s.alt)}
               width={1920}
               height={1024}
               loading={i === 0 ? "eager" : "lazy"}
@@ -118,20 +131,24 @@ export function HeroSlider() {
             <div className="relative mx-auto flex min-h-[560px] max-w-7xl flex-col justify-center gap-8 px-4 py-16 md:min-h-[600px] md:flex-row md:items-center md:justify-between md:px-6">
               <div className="max-w-2xl text-primary-foreground">
                 <p className="inline-flex items-center gap-2 rounded-full border border-gold/40 bg-navy-deep/60 px-4 py-1.5 text-sm font-semibold text-gold backdrop-blur">
-                  <Star className="size-4 fill-current" /> {s.eyebrow}
+                  <Star className="size-4 fill-current" /> <Text text={s.eyebrow} />
                 </p>
                 <h2 className="headline mt-5 text-4xl sm:text-5xl md:text-7xl">{s.title}</h2>
                 <span className="rule-leaf mt-6" />
-                <p className="mt-5 text-lg text-primary-foreground/85 md:text-xl">{s.text}</p>
+                <p className="mt-5 text-lg text-primary-foreground/85 md:text-xl">
+                  <Text text={s.text} />
+                </p>
                 <div className="mt-8 flex flex-wrap gap-3">
                   <Button asChild variant="leaf" size="lg">
                     <Link to="/products" tabIndex={i === index ? 0 : -1}>
-                      <LayoutGrid /> Explore Products
+                      <LayoutGrid />
+                      <Text text={" Explore Products"} />
                     </Link>
                   </Button>
                   <Button asChild size="lg" className="bg-card text-primary hover:bg-card/90">
                     <Link to="/contact" tabIndex={i === index ? 0 : -1}>
-                      <FileText /> Request a Quote
+                      <FileText />
+                      <Text text={" Request a Quote"} />
                     </Link>
                   </Button>
                 </div>
@@ -160,12 +177,14 @@ export function HeroSlider() {
 
       <div className="relative flex items-center justify-center gap-2 py-4">
         {reduced ? (
-          <span className="rounded bg-navy-deep px-2 py-1 text-xs text-white">Autoplay off</span>
+          <span className="rounded bg-navy-deep px-2 py-1 text-xs text-white">
+            <Text text={"Autoplay off"} />
+          </span>
         ) : (
           <button
             type="button"
             onClick={() => setPaused((p) => !p)}
-            aria-label={paused ? "Play slideshow" : "Pause slideshow"}
+            aria-label={t(paused ? "Play slideshow" : "Pause slideshow")}
             className="grid size-10 place-items-center rounded-full bg-card/30 text-white"
           >
             {paused ? <Play className="size-5" /> : <Pause className="size-5" />}
@@ -174,7 +193,7 @@ export function HeroSlider() {
         <button
           type="button"
           onClick={() => go(index - 1)}
-          aria-label="Previous slide"
+          aria-label={t("Previous slide")}
           className="mr-2 hidden size-9 place-items-center rounded-full bg-card/20 text-primary-foreground backdrop-blur hover:bg-card/40 md:grid"
         >
           <ChevronLeft className="size-5" />
@@ -184,7 +203,7 @@ export function HeroSlider() {
             key={i}
             type="button"
             onClick={() => go(i)}
-            aria-label={`Show slide ${i + 1}`}
+            aria-label={t(`Show slide ${i + 1}`)}
             aria-current={i === index ? "true" : undefined}
             className={`h-9 min-w-9 rounded-full border-8 border-transparent bg-clip-padding transition-all ${i === index ? "w-12 bg-leaf" : "w-9 bg-card/60"}`}
           />
@@ -192,7 +211,7 @@ export function HeroSlider() {
         <button
           type="button"
           onClick={() => go(index + 1)}
-          aria-label="Next slide"
+          aria-label={t("Next slide")}
           className="ml-2 hidden size-9 place-items-center rounded-full bg-card/20 text-primary-foreground backdrop-blur hover:bg-card/40 md:grid"
         >
           <ChevronRight className="size-5" />

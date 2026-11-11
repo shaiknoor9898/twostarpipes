@@ -1,4 +1,10 @@
 import { test, expect } from "@playwright/test";
+test("liveness is local, uncached and discloses no configuration", async ({ request }) => {
+  const response = await request.get("/api/health");
+  expect(response.status()).toBe(200);
+  expect(response.headers()["cache-control"]).toContain("no-store");
+  expect(await response.json()).toEqual({ status: "ok" });
+});
 test.beforeEach(async ({ page }) => {
   // No external messages, CAPTCHA solving, telemetry or real Auth traffic in local QA.
   await page.route(/^https:\/\//, (route) => route.abort());
@@ -36,7 +42,16 @@ for (const width of [390, 768, 1440]) {
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
       true,
     );
-    await page.screenshot({ path: `test-results/contact-${width}.png`, fullPage: true });
+    if (process.env["QA_SCREENSHOTS"] === "1")
+      await page.screenshot({ path: `test-results/contact-${width}.png`, fullPage: true });
+    await page.goto("/admin");
+    await expect(page.getByRole("heading", { name: "Admin sign in" })).toBeVisible();
+    await expect(page.getByLabel("Email", { exact: true })).toBeVisible();
+    await expect
+      .poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth))
+      .toBe(true);
+    if (process.env["QA_SCREENSHOTS"] === "1")
+      await page.screenshot({ path: `test-results/admin-login-${width}.png`, fullPage: true });
   });
 }
 test("reduced-motion carousel, keyboard navigation and private login", async ({ page }) => {

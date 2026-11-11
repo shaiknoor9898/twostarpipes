@@ -11,6 +11,7 @@ export function secureResponse(response: Response, path: string) {
   if (path.startsWith("/admin") || path.startsWith("/api/") || path.includes("/_serverFn/")) {
     headers.set("Cache-Control", "private, no-store");
     headers.set("X-Frame-Options", "DENY");
+    headers.set("X-Robots-Tag", "noindex, nofollow, noarchive");
   }
   return new Response(response.body, {
     status: response.status,

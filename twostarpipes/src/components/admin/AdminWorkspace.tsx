@@ -1,3 +1,4 @@
+import { SITE } from "@/lib/site";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
@@ -432,12 +433,12 @@ export function Admin() {
                   </p>
                   <p>Submitted {new Date(selected.created_at).toLocaleString()}</p>
                   <a
-                    href={`https://wa.me/${selected.phone.replace(/\D/g, "")}`}
+                    href={SITE.whatsappHref}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="underline"
                   >
-                    Open WhatsApp contact
+                    Open company WhatsApp
                   </a>
                   <label>
                     Status

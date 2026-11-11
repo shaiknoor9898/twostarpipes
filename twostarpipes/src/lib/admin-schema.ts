@@ -17,6 +17,14 @@ export const updateEnquirySchema = sessionSchema.extend({
   updated_at: z.iso.datetime({ offset: true }),
 });
 const lines = z.array(z.string().trim().min(1).max(300)).max(50);
+const isPublicHttps = (value: string) => {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && !url.username && !url.password;
+  } catch {
+    return false;
+  }
+};
 const assetUrl = z
   .string()
   .max(2000)
@@ -24,11 +32,7 @@ const assetUrl = z
     if (/^builtin:(pvc|agricultural|casing|upvc|electrical|drip|drip-fittings)$/.test(value))
       return true;
     if (value.startsWith("/assets/") && !value.startsWith("//")) return true;
-    try {
-      return new URL(value).protocol === "https:";
-    } catch {
-      return false;
-    }
+    return isPublicHttps(value);
   }, "Use an uploaded asset or HTTPS URL");
 export const productSchema = z.object({
   slug: z
@@ -45,7 +49,14 @@ export const productSchema = z.object({
   gauges: lines.default([]),
   advantages: lines.default([]),
   specifications: z.string().trim().max(5000).default(""),
-  brochure: assetUrl.or(z.literal("")).default(""),
+  brochure: z
+    .string()
+    .max(2000)
+    .refine(
+      (value) => value === "" || isPublicHttps(value),
+      "Use an uploaded PDF HTTPS URL without embedded credentials",
+    )
+    .default(""),
   published: z.boolean(),
 });
 export type ManagedProduct = z.infer<typeof productSchema>;

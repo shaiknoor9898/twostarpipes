@@ -7,6 +7,7 @@ it("never caches private admin or API responses", () => {
     const response = secureResponse(new Response("private"), path);
     expect(response.headers.get("cache-control")).toBe("private, no-store");
     expect(response.headers.get("x-content-type-options")).toBe("nosniff");
+    expect(response.headers.get("x-robots-tag")).toBe("noindex, nofollow, noarchive");
   }
 });
 it("requires a configured high-entropy cron credential", () => {

@@ -22,10 +22,8 @@ export const SITE = {
   phoneHref: "tel:+919848161127",
   phone2: "+91 95055 03550",
   phone2Href: "tel:+919505503550",
-  // WhatsApp assumed on the primary number — confirm with the owner.
-  whatsappHref:
-    "https://wa.me/919848161127?text=" +
-    encodeURIComponent("Hello Two Star Pipes, I would like a price for pipes."),
+  // Company WhatsApp destination confirmed by the owner.
+  whatsappHref: "https://wa.me/919505503550",
   email: "twostarpipes@yahoo.com",
   website: "www.twostarpipes.com",
   addressLine1: "38/109-C, Chittor Road, Beside Sub Station",

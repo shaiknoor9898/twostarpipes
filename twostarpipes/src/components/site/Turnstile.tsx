@@ -1,3 +1,5 @@
+import { Text } from "@/components/site/SitePreferences";
+import { useSitePreferences } from "@/lib/site-preferences";
 import { useEffect, useRef, useState } from "react";
 
 type TurnstileAPI = {
@@ -11,6 +13,7 @@ declare global {
 }
 
 export function Turnstile({ onToken }: { onToken: (token: string) => void }) {
+  const { t } = useSitePreferences();
   const container = useRef<HTMLDivElement>(null);
   const [failed, setFailed] = useState(false);
   const sitekey = import.meta.env["VITE_TURNSTILE_SITE_KEY"];
@@ -68,7 +71,9 @@ export function Turnstile({ onToken }: { onToken: (token: string) => void }) {
     <div>
       <div ref={container} />
       {(!sitekey || failed) && (
-        <p role="alert">Security check unavailable. Please reload or call us.</p>
+        <p role="alert">
+          <Text text={"Security check unavailable. Please reload or call us."} />
+        </p>
       )}
     </div>
   );

@@ -1,9 +1,12 @@
+import { Text } from "@/components/site/SitePreferences";
+import { useSitePreferences } from "@/lib/site-preferences";
 import { useEffect, useState } from "react";
 import { useLocation } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { trackUsage } from "@/lib/analytics.functions";
 const pages = ["/", "/about", "/products", "/dealers", "/contact"] as const;
 export function PrivacyControls() {
+  const { t } = useSitePreferences();
   const [consent, setConsent] = useState(false),
     [ready, setReady] = useState(false);
   const location = useLocation();
@@ -41,9 +44,11 @@ export function PrivacyControls() {
             }
           }}
         />
-        Allow anonymous page and enquiry-success counts. No customer details, IP addresses or
-        visitor identifiers are recorded by this feature. Optional counts are off by default; you
-        can change this choice here.
+        <Text
+          text={
+            "Allow anonymous page and enquiry-success counts. No customer details, IP addresses or visitor identifiers are recorded by this feature. Optional counts are off by default; you can change this choice here."
+          }
+        />
       </label>
     </aside>
   );

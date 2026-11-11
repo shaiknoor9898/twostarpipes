@@ -15,6 +15,7 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as DealersRouteImport } from './routes/dealers'
 import { Route as ProductsRouteImport } from './routes/products'
+import { Route as ApiHealthRouteImport } from './routes/api.health'
 import { Route as ApiNotificationsRouteImport } from './routes/api.notifications'
 
 const IndexRoute = IndexRouteImport.update({
@@ -47,6 +48,11 @@ const ProductsRoute = ProductsRouteImport.update({
   path: '/products',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiHealthRoute = ApiHealthRouteImport.update({
+  id: '/api/health',
+  path: '/api/health',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiNotificationsRoute = ApiNotificationsRouteImport.update({
   id: '/api/notifications',
   path: '/api/notifications',
@@ -60,6 +66,7 @@ export interface FileRoutesByFullPath {
   '/contact': typeof ContactRoute
   '/dealers': typeof DealersRoute
   '/products': typeof ProductsRoute
+  '/api/health': typeof ApiHealthRoute
   '/api/notifications': typeof ApiNotificationsRoute
 }
 export interface FileRoutesByTo {
@@ -69,6 +76,7 @@ export interface FileRoutesByTo {
   '/contact': typeof ContactRoute
   '/dealers': typeof DealersRoute
   '/products': typeof ProductsRoute
+  '/api/health': typeof ApiHealthRoute
   '/api/notifications': typeof ApiNotificationsRoute
 }
 export interface FileRoutesById {
@@ -79,6 +87,7 @@ export interface FileRoutesById {
   '/contact': typeof ContactRoute
   '/dealers': typeof DealersRoute
   '/products': typeof ProductsRoute
+  '/api/health': typeof ApiHealthRoute
   '/api/notifications': typeof ApiNotificationsRoute
 }
 export interface FileRouteTypes {
@@ -90,6 +99,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/dealers'
     | '/products'
+    | '/api/health'
     | '/api/notifications'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -99,6 +109,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/dealers'
     | '/products'
+    | '/api/health'
     | '/api/notifications'
   id:
     | '__root__'
@@ -108,6 +119,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/dealers'
     | '/products'
+    | '/api/health'
     | '/api/notifications'
   fileRoutesById: FileRoutesById
 }
@@ -118,6 +130,7 @@ export interface RootRouteChildren {
   ContactRoute: typeof ContactRoute
   DealersRoute: typeof DealersRoute
   ProductsRoute: typeof ProductsRoute
+  ApiHealthRoute: typeof ApiHealthRoute
   ApiNotificationsRoute: typeof ApiNotificationsRoute
 }
 
@@ -165,6 +178,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProductsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/health': {
+      id: '/api/health'
+      path: '/api/health'
+      fullPath: '/api/health'
+      preLoaderRoute: typeof ApiHealthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/notifications': {
       id: '/api/notifications'
       path: '/api/notifications'
@@ -182,6 +202,7 @@ const rootRouteChildren: RootRouteChildren = {
   ContactRoute: ContactRoute,
   DealersRoute: DealersRoute,
   ProductsRoute: ProductsRoute,
+  ApiHealthRoute: ApiHealthRoute,
   ApiNotificationsRoute: ApiNotificationsRoute,
 }
 export const routeTree = rootRouteImport

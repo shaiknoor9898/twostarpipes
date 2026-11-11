@@ -1,5 +1,7 @@
 # Implementation status and evidence
 
+Current review: [FINAL_READINESS.md](FINAL_READINESS.md) records 142 local tests, 10 browser tests, the admin corrections and live approval gates. Older counts below are historical. Full pending-file inventory: [WORKSPACE_FILES.md](WORKSPACE_FILES.md). Live Supabase preflight results are still required before migration 001.
+
 ## Initial prioritized gap analysis
 
 The actual checkout had five public pages, an existing product catalogue, shared quotation validation, client duplicate protection, Turnstile verification, persistent Redis budgets/token claims, safe quotation errors and security drafts. It had no admin route, admin allowlist, CMS, storage workflow, notification queue, browser tests or sitemap. Full lint failed on existing formatting. The source included unverified certification/statistical claims. Working quotation code, branding, contact information and catalogue data were preserved.
@@ -21,15 +23,15 @@ The actual checkout had five public pages, an existing product catalogue, shared
 
 - npm run typecheck: PASS.
 - npm run lint: PASS, zero errors and six pre-existing UI fast-refresh warnings.
-- npm test: PASS, 111 tests in 11 files, including four embedded PostgreSQL integration tests. Supabase Auth/Storage are synthetic fixture schemas in those DB tests, not actual Supabase services.
-- npm run test:e2e: PASS, four local Edge browser scenarios, external requests blocked. Contact pages at 390, 768 and 1440 CSS pixels were captured and visually inspected.
+- npm test: PASS, 131 tests in 12 files, including 23 embedded PostgreSQL migration/RLS/rollback cases. Supabase Auth/Storage are synthetic fixture schemas in those DB tests, not actual Supabase services.
+- npm run test:e2e: PASS, five local Edge browser scenarios, external requests blocked. Public forms and admin login layouts were checked at 390, 768 and 1440 CSS pixels; GET /api/health was also verified. Successful live admin workflows still require real staging Auth.
 - npm run build: PASS, production Cloudflare/Nitro output generated locally.
 - npm run test:bundle-security: PASS, client JavaScript has no configured server-credential variable references.
 - No connected database SQL, real provider integration, staging deployment or production operation was executed.
 
 ## Remaining security and launch risks
 
-1. Until SQL is approved and applied, anonymous REST inserts may still bypass the server controls. Until new roles/columns exist, new application features intentionally fail closed. Treat the release as one coordinated schema/configuration/application cutover.
+1. The owner reports restricted staging grants and zero policies, but actual roles/effective grants remain unreviewed. No production state was inspected. Until new roles/columns exist, new application features intentionally fail closed. Treat the release as one coordinated schema/configuration/application cutover.
 2. Live inherited grants, old SECURITY DEFINER functions, views and Storage policies may differ from the fixture. An owner must audit them. No claim of comprehensive production security is made.
 3. Global budgets can be exhausted by an attacker; add trusted edge per-IP controls. Phone aliases are not a strong identity boundary. Redis persistence/eviction/quota configuration matters.
 4. JWTs must be rotated before expiry. Allowlist changes must be owner-controlled; implement the owner-approved MFA/recovery policy. Browser Auth uses the existing Supabase session storage, so XSS prevention and session hygiene remain essential.
